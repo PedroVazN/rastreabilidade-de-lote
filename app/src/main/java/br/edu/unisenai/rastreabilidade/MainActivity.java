@@ -18,6 +18,7 @@ import com.google.zxing.WriterException;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
 
 import br.edu.unisenai.rastreabilidade.data.LotesLocais;
@@ -33,11 +34,9 @@ public class MainActivity extends Activity {
         super.onCreate(estado);
         setContentView(R.layout.activity_main);
         findViewById(R.id.tela).setOnApplyWindowInsetsListener((view, insets) -> {
-            if (android.os.Build.VERSION.SDK_INT >= 30) {
-                android.graphics.Insets barras = insets.getInsets(WindowInsets.Type.systemBars()
-                        | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
-                view.setPadding(barras.left, barras.top, barras.right, barras.bottom);
-            }
+            android.graphics.Insets barras = insets.getInsets(WindowInsets.Type.systemBars()
+                    | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
+            view.setPadding(barras.left, barras.top, barras.right, barras.bottom);
             return insets;
         });
 
@@ -104,9 +103,11 @@ public class MainActivity extends Activity {
     }
 
     private void mostrarEtiqueta(Lote lote, Bitmap qr) {
-        String data = DateFormat.getDateInstance().format(new Date(lote.criadoEm));
-        ((TextView) findViewById(R.id.resumo)).setText(getString(R.string.resumo, lote.produto,
-                lote.quantidade, data));
+        String data = DateFormat.getDateInstance(DateFormat.SHORT, Locale.forLanguageTag("pt-BR"))
+                .format(new Date(lote.criadoEm));
+        String resumo = getResources().getQuantityString(R.plurals.resumo, lote.quantidade,
+                lote.produto, lote.quantidade, data);
+        ((TextView) findViewById(R.id.resumo)).setText(resumo);
         ((TextView) findViewById(R.id.codigo)).setText(lote.id);
         ((ImageView) findViewById(R.id.qr)).setImageBitmap(qr);
         findViewById(R.id.etiqueta).setVisibility(View.VISIBLE);
