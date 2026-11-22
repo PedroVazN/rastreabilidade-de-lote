@@ -4,7 +4,7 @@ Distribuição inicial para três pessoas. Vinculem cada história a uma issue c
 
 ## BASE — Abrir a base Android e gerar uma etiqueta local
 
-**Responsável sugerido** Pessoa A
+**Responsável sugerido** Pedro Vaz
 
 Como integrante do grupo, quero abrir a base no Android Studio e conferir o cadastro local para começar a integração com o Firebase a partir de um fluxo executável.
 
@@ -15,7 +15,7 @@ Esta issue cobre o PR inicial. C1 registra a integração pendente com o Firesto
 
 ## C1 — Criar lote e gerar etiqueta QR
 
-**Responsável sugerido** Pessoa A
+**Responsável sugerido** Pedro Vaz
 
 Como operador de etapa, quero criar um lote para identificar as peças da produção.
 
@@ -26,7 +26,7 @@ Integrar o cadastro local da base ao Firestore. Usar data do servidor quando o d
 
 ## C2 — Cadastrar as etapas na ordem do processo
 
-**Responsável sugerido** Pessoa B
+**Responsável sugerido** Nathan Ferreira Silva
 
 Como integrante da Qualidade, quero cadastrar as etapas em ordem para definir o fluxo de produção.
 
@@ -37,7 +37,7 @@ Perfil responsável sugerido para o cadastro. Definir como lotes em andamento pr
 
 ## C3 — Ler o QR e concluir a próxima etapa
 
-**Responsável sugerido** Pessoa B
+**Responsável sugerido** Nathan Ferreira Silva
 
 Como operador de etapa, quero ler o QR do lote para registrar que concluí a próxima operação.
 
@@ -48,7 +48,7 @@ Depende de C1 e C2. Usar timestamp do servidor.
 
 ## C4 — Impedir etapas puladas ou duplicadas
 
-**Responsável sugerido** Pessoa B
+**Responsável sugerido** Nathan Ferreira Silva
 
 Como operador de etapa, quero que o app valide a ordem para manter a rastreabilidade confiável.
 
@@ -59,7 +59,7 @@ Trabalhar com C3 e NC3. Validar a mudança e gravar o evento junto com o avanço
 
 ## C5 — Consultar o histórico por QR ou código
 
-**Responsável sugerido** Pessoa C
+**Responsável sugerido** Marcio Petigrosso
 
 Como integrante da Qualidade, quero consultar o lote por QR ou código para investigar problemas na fabricação.
 
@@ -70,7 +70,7 @@ Usar RecyclerView, estado vazio e listener no histórico.
 
 ## C6 — Reprovar o lote com motivo e bloquear registros
 
-**Responsável sugerido** Pessoa C
+**Responsável sugerido** Marcio Petigrosso
 
 Como integrante da Qualidade, quero reprovar um lote com motivo para impedir que ele continue na produção.
 
@@ -83,7 +83,7 @@ Trabalhar com C4 e NC3 para tratar corrida entre reprovação e avanço.
 
 ## NC1–NC4 — Configurar Firebase, sessão, perfis e regras
 
-**Responsável sugerido** Pessoa A
+**Responsável sugerido** Pedro Vaz
 
 Como integrante da equipe, quero autenticação e permissões por perfil para usar o app com dados sincronizados.
 
@@ -94,7 +94,7 @@ Habilitar login/cadastro por e-mail, logout e tratamento de conta sem perfil. At
 
 ## NC5–NC8 — Verificar listas, formulários e documentar configuração
 
-**Responsável sugerido** Pessoa A
+**Responsável sugerido** Pedro Vaz
 
 Como integrante do grupo, quero conferir a experiência nas telas e registrar como executar o projeto.
 
@@ -105,7 +105,7 @@ Completar o README com os integrantes, prints reais, configuração do Firebase 
 
 ## ENTREGA — Preparar APK, slides, vídeo e checklist final
 
-**Responsável sugerido** Pessoas A, B e C
+**Responsável sugerido** Pedro Vaz, Nathan Ferreira Silva e Marcio Petigrosso
 
 Como integrante do grupo, quero reunir as evidências do MVP para a entrega e a apresentação.
 
