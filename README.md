@@ -6,7 +6,7 @@ Projeto 7 da TechInova. O aplicativo acompanha a passagem de lotes por etapas da
 
 - Pedro Vaz — [@PedroVazN](https://github.com/PedroVazN)
 - Nathan Ferreira Silva — [@NathanSec](https://github.com/NathanSec)
-- Marcio Petigrosso — perfil do GitHub a informar
+- Marcio Petigrosso — [@petzada](https://github.com/petzada)
 
 ## Abrir no Android Studio
 

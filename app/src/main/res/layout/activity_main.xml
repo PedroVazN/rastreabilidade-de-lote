@@ -9,6 +9,10 @@
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:paddingHorizontal="8dp" android:layout_marginTop="4dp" android:text="@string/local"
             android:textColor="#5D5F60" android:textSize="14sp" />
+        <Button android:id="@+id/consultar_historico" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="12dp"
+            android:backgroundTint="#FFFFFF" android:textColor="#131416"
+            android:text="@string/consultar_historico" android:textAllCaps="false" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" android:orientation="vertical"
             android:background="@drawable/folha" android:padding="20dp">
@@ -41,6 +45,10 @@
             <TextView android:id="@+id/codigo" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:fontFamily="monospace" android:gravity="center" android:textColor="#1B6C80"
                 android:textIsSelectable="true" />
+            <Button android:id="@+id/ver_historico" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:backgroundTint="#131416" android:textColor="#FFFFFF"
+                android:text="@string/ver_historico" android:textAllCaps="false" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
