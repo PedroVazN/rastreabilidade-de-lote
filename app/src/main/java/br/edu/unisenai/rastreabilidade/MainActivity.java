@@ -1,6 +1,7 @@
 package br.edu.unisenai.rastreabilidade;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -44,6 +45,8 @@ public class MainActivity extends Activity {
         quantidade = findViewById(R.id.quantidade);
         lotes = new LotesLocais(this);
         findViewById(R.id.criar).setOnClickListener(view -> criarLote());
+        findViewById(R.id.consultar_historico).setOnClickListener(view ->
+                startActivity(new Intent(this, HistoricoActivity.class)));
 
         Lote ultimo = lotes.ultimo();
         if (ultimo != null) {
@@ -110,6 +113,8 @@ public class MainActivity extends Activity {
         ((TextView) findViewById(R.id.resumo)).setText(resumo);
         ((TextView) findViewById(R.id.codigo)).setText(lote.id);
         ((ImageView) findViewById(R.id.qr)).setImageBitmap(qr);
+        findViewById(R.id.ver_historico).setOnClickListener(view -> startActivity(
+                new Intent(this, HistoricoActivity.class).putExtra(HistoricoActivity.EXTRA_LOTE, lote.id)));
         findViewById(R.id.etiqueta).setVisibility(View.VISIBLE);
     }
 }

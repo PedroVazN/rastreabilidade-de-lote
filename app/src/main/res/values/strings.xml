@@ -13,5 +13,21 @@
     </plurals>
     <string name="erro_produto">Informe o produto.</string>
     <string name="erro_quantidade">Informe um número inteiro maior que zero.</string>
+    <string name="ver_historico">Ver histórico</string>
+    <string name="consultar_historico">Consultar histórico de lote</string>
+    <string name="historico">Histórico do lote</string>
+    <string name="codigo_lote">Código do lote</string>
+    <string name="codigos_exemplo">Exemplos para teste: EXEMPLO-ATIVO e EXEMPLO-REPROVADO</string>
+    <string name="consultar">Consultar</string>
+    <string name="situacao_ativo">Situação: ativo</string>
+    <string name="situacao_reprovado">Situação: reprovado</string>
+    <string name="historico_vazio">Nenhuma etapa registrada para este lote.</string>
+    <string name="evento_etapa">%1$d. %2$s</string>
+    <string name="evento_reprovacao">Lote reprovado</string>
+    <string name="evento_motivo">Motivo: %1$s</string>
+    <string name="evento_registrado_por">Registrado por %1$s</string>
+    <string name="evento_reprovado_por">Reprovado por %1$s</string>
+    <string name="erro_codigo">Informe o código do lote.</string>
+    <string name="erro_lote_nao_encontrado">Lote não encontrado. Confira o código.</string>
     <string name="erro_gravar">Não foi possível salvar o lote neste aparelho.</string>
 </resources>
