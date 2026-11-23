@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Rastreabilidade de Lote</string>
+    <string name="local">Cadastro neste aparelho</string>
+    <string name="novo">Novo lote</string>
+    <string name="produto">Produto</string>
+    <string name="quantidade">Quantidade de peças</string>
+    <string name="criar">＋  Criar lote</string>
+    <string name="etiqueta">Etiqueta do lote</string>
+    <string name="qr_descricao">QR Code de identificação do lote</string>
+    <plurals name="resumo">
+        <item quantity="one">%1$s · %2$d peça · %3$s</item>
+        <item quantity="other">%1$s · %2$d peças · %3$s</item>
+    </plurals>
+    <string name="erro_produto">Informe o produto.</string>
+    <string name="erro_quantidade">Informe um número inteiro maior que zero.</string>
+    <string name="erro_gravar">Não foi possível salvar o lote neste aparelho.</string>
+</resources>
