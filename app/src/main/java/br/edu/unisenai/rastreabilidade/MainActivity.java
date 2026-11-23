@@ -7,13 +7,18 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowInsets;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.BarcodeFormat;
@@ -22,15 +27,19 @@ import com.google.zxing.WriterException;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.UUID;
 
-import br.edu.unisenai.rastreabilidade.data.LotesLocais;
+import br.edu.unisenai.rastreabilidade.data.LotesFirestore;
 import br.edu.unisenai.rastreabilidade.model.Lote;
 
 public class MainActivity extends Activity {
     private EditText produto;
     private EditText quantidade;
-    private LotesLocais lotes;
+    private LotesFirestore lotes;
+    private Button criar;
+    private boolean operador;
+    private Task<Void> gravacao;
+    private ListenerRegistration etiquetaListener;
+    private boolean rolarAteEtiqueta;
 
     @Override
     protected void onCreate(Bundle estado) {
@@ -52,8 +61,8 @@ public class MainActivity extends Activity {
 
         produto = findViewById(R.id.produto);
         quantidade = findViewById(R.id.quantidade);
-        lotes = new LotesLocais(this);
-        boolean operador = LoginActivity.OPERADOR.equals(perfil);
+        lotes = new LotesFirestore(this, usuario.getUid());
+        operador = LoginActivity.OPERADOR.equals(perfil);
         ((TextView) findViewById(R.id.perfil_atual)).setText(operador
                 ? R.string.perfil_operador : R.string.perfil_qualidade);
         findViewById(R.id.form_lote).setVisibility(operador ? View.VISIBLE : View.GONE);
@@ -61,14 +70,37 @@ public class MainActivity extends Activity {
             FirebaseAuth.getInstance().signOut();
             voltarAoLogin();
         });
-        findViewById(R.id.criar).setOnClickListener(view -> criarLote());
+        criar = findViewById(R.id.criar);
+        criar.setOnClickListener(view -> criarLote());
         findViewById(R.id.consultar_historico).setOnClickListener(view ->
                 startActivity(new Intent(this, HistoricoActivity.class)));
 
-        Lote ultimo = operador ? lotes.ultimo() : null;
-        if (ultimo != null) {
-            mostrarEtiqueta(ultimo, gerarQr(ultimo.id));
+        Object pendente = getLastNonConfigurationInstance();
+        if (pendente instanceof GravacaoAnterior) {
+            gravacao = ((GravacaoAnterior) pendente).tarefa;
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (operador) {
+            observarEtiqueta();
+            if (gravacao != null) {
+                acompanharGravacao();
+            }
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        pararObservacao();
+        super.onStop();
+    }
+
+    @Override
+    public Object onRetainNonConfigurationInstance() {
+        return gravacao == null ? null : new GravacaoAnterior(gravacao);
     }
 
     private void voltarAoLogin() {
@@ -78,6 +110,9 @@ public class MainActivity extends Activity {
     }
 
     private void criarLote() {
+        if (!operador || gravacao != null) {
+            return;
+        }
         String nome = produto.getText().toString().trim();
         if (nome.isEmpty()) {
             produto.setError(getString(R.string.erro_produto));
@@ -97,19 +132,69 @@ public class MainActivity extends Activity {
             return;
         }
 
-        Lote lote = new Lote(UUID.randomUUID().toString(), nome, total, System.currentTimeMillis());
-        Bitmap qr = gerarQr(lote.id);
-        if (!lotes.salvar(lote)) {
-            Toast.makeText(this, R.string.erro_gravar, Toast.LENGTH_LONG).show();
+        gravacao = lotes.criar(nome, total);
+        acompanharGravacao();
+    }
+
+    private void acompanharGravacao() {
+        criar.setEnabled(false);
+        produto.setEnabled(false);
+        quantidade.setEnabled(false);
+        criar.setText(R.string.salvando_lote);
+        gravacao.addOnCompleteListener(this, tarefa -> {
+            gravacao = null;
+            criar.setEnabled(true);
+            produto.setEnabled(true);
+            quantidade.setEnabled(true);
+            criar.setText(R.string.criar);
+            if (!tarefa.isSuccessful()) {
+                Toast.makeText(this, R.string.erro_gravar, Toast.LENGTH_LONG).show();
+                return;
+            }
+            produto.setText("");
+            quantidade.setText("");
+            getSystemService(InputMethodManager.class).hideSoftInputFromWindow(produto.getWindowToken(), 0);
+            rolarAteEtiqueta = true;
+            observarEtiqueta();
+        });
+    }
+
+    private void observarEtiqueta() {
+        pararObservacao();
+        DocumentReference documento = lotes.ultimaEtiqueta();
+        if (documento == null) {
             return;
         }
-        produto.setText("");
-        quantidade.setText("");
-        getSystemService(android.view.inputmethod.InputMethodManager.class)
-                .hideSoftInputFromWindow(produto.getWindowToken(), 0);
-        mostrarEtiqueta(lote, qr);
-        View tela = findViewById(R.id.tela);
-        tela.post(() -> ((android.widget.ScrollView) tela).fullScroll(View.FOCUS_DOWN));
+        etiquetaListener = documento.addSnapshotListener(this, (snapshot, erro) -> {
+            if (erro != null || snapshot == null || !snapshot.exists()) {
+                findViewById(R.id.etiqueta).setVisibility(View.GONE);
+                return;
+            }
+            Lote lote = LotesFirestore.converter(snapshot);
+            if (lote != null) {
+                mostrarEtiqueta(lote, gerarQr(lote.id));
+                if (rolarAteEtiqueta) {
+                    rolarAteEtiqueta = false;
+                    android.widget.ScrollView tela = findViewById(R.id.tela);
+                    tela.post(() -> tela.fullScroll(View.FOCUS_DOWN));
+                }
+            }
+        });
+    }
+
+    private void pararObservacao() {
+        if (etiquetaListener != null) {
+            etiquetaListener.remove();
+            etiquetaListener = null;
+        }
+    }
+
+    private static final class GravacaoAnterior {
+        final Task<Void> tarefa;
+
+        GravacaoAnterior(Task<Void> tarefa) {
+            this.tarefa = tarefa;
+        }
     }
 
     private Bitmap gerarQr(String id) {
@@ -136,8 +221,7 @@ public class MainActivity extends Activity {
         ((TextView) findViewById(R.id.resumo)).setText(resumo);
         ((TextView) findViewById(R.id.codigo)).setText(lote.id);
         ((ImageView) findViewById(R.id.qr)).setImageBitmap(qr);
-        findViewById(R.id.ver_historico).setOnClickListener(view -> startActivity(
-                new Intent(this, HistoricoActivity.class).putExtra(HistoricoActivity.EXTRA_LOTE, lote.id)));
+        findViewById(R.id.ver_historico).setVisibility(View.GONE);
         findViewById(R.id.etiqueta).setVisibility(View.VISIBLE);
     }
 }
