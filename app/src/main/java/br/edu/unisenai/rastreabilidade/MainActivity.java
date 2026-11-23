@@ -12,6 +12,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.BarcodeFormat;
@@ -33,6 +35,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle estado) {
         super.onCreate(estado);
+        FirebaseUser usuario = FirebaseAuth.getInstance().getCurrentUser();
+        String perfil = getIntent().getStringExtra(LoginActivity.EXTRA_PERFIL);
+        if (usuario == null || !usuario.getUid().equals(getIntent().getStringExtra(LoginActivity.EXTRA_UID))
+                || (!LoginActivity.OPERADOR.equals(perfil) && !LoginActivity.QUALIDADE.equals(perfil))) {
+            voltarAoLogin();
+            return;
+        }
         setContentView(R.layout.activity_main);
         findViewById(R.id.tela).setOnApplyWindowInsetsListener((view, insets) -> {
             android.graphics.Insets barras = insets.getInsets(WindowInsets.Type.systemBars()
@@ -44,14 +53,28 @@ public class MainActivity extends Activity {
         produto = findViewById(R.id.produto);
         quantidade = findViewById(R.id.quantidade);
         lotes = new LotesLocais(this);
+        boolean operador = LoginActivity.OPERADOR.equals(perfil);
+        ((TextView) findViewById(R.id.perfil_atual)).setText(operador
+                ? R.string.perfil_operador : R.string.perfil_qualidade);
+        findViewById(R.id.form_lote).setVisibility(operador ? View.VISIBLE : View.GONE);
+        findViewById(R.id.sair).setOnClickListener(view -> {
+            FirebaseAuth.getInstance().signOut();
+            voltarAoLogin();
+        });
         findViewById(R.id.criar).setOnClickListener(view -> criarLote());
         findViewById(R.id.consultar_historico).setOnClickListener(view ->
                 startActivity(new Intent(this, HistoricoActivity.class)));
 
-        Lote ultimo = lotes.ultimo();
+        Lote ultimo = operador ? lotes.ultimo() : null;
         if (ultimo != null) {
             mostrarEtiqueta(ultimo, gerarQr(ultimo.id));
         }
+    }
+
+    private void voltarAoLogin() {
+        startActivity(new Intent(this, LoginActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        finish();
     }
 
     private void criarLote() {

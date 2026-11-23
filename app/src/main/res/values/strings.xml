@@ -1,5 +1,22 @@
 <resources>
     <string name="app_name">Rastreabilidade de Lote</string>
+    <string name="acesso">Acesso à rastreabilidade</string>
+    <string name="email">E-mail</string>
+    <string name="senha">Senha</string>
+    <string name="entrar">Entrar</string>
+    <string name="criar_conta">Cadastrar conta</string>
+    <string name="sair">Sair</string>
+    <string name="perfil_operador">Operador de etapa</string>
+    <string name="perfil_qualidade">Qualidade</string>
+    <string name="erro_email">Informe um e-mail válido.</string>
+    <string name="erro_senha">Informe a senha.</string>
+    <string name="erro_senha_curta">Use pelo menos 6 caracteres.</string>
+    <string name="erro_login">Confira o e-mail e a senha e tente novamente.</string>
+    <string name="erro_cadastro">Não foi possível cadastrar a conta. Confira o e-mail e a política de senha.</string>
+    <string name="erro_perfil">Não foi possível carregar seu perfil. Confira a conexão e tente novamente.</string>
+    <string name="sem_perfil">Conta sem perfil autorizado. Peça à equipe para atribuir seu perfil no Firebase.</string>
+    <string name="cadastro_pendente">Conta criada. Peça à equipe para liberar seu perfil antes de entrar.</string>
+    <string name="conectando">Conectando…</string>
     <string name="local">Cadastro neste aparelho</string>
     <string name="novo">Novo lote</string>
     <string name="produto">Produto</string>

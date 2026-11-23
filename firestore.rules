@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function perfil() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil;
+    }
+
+    function temPerfil() {
+      return request.auth != null && perfil() in ['operador', 'qualidade'];
+    }
+
+    match /usuarios/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /etapas/{etapaId} {
+      allow read: if temPerfil();
+    }
+
+    match /lotes/{loteId} {
+      allow read: if temPerfil();
+
+      match /historico/{eventoId} {
+        allow read: if temPerfil();
+      }
+    }
+  }
+}
