@@ -14,7 +14,7 @@ Abra a pasta que contém `settings.gradle`. Use o JDK do Android Studio para o G
 
 ## Estado da base
 
-O cadastro grava produto, quantidade e horário no aparelho e gera um QR com o ID do lote. A última etiqueta reaparece ao reabrir o app. A versão inicial usa Java, layouts XML e ZXing. O fluxo de produção entre aparelhos depende das tarefas do [backlog](DOCS/backlog.md).
+O app usa Java, layouts XML e ZXing. Após o login, o aplicativo mostra o perfil autorizado e abre a tela principal. O histórico de demonstração continua local enquanto as tarefas do [backlog](DOCS/backlog.md) avançam.
 
 - `MainActivity` conecta o formulário e a etiqueta.
 - `model/Lote` representa o lote.
@@ -23,9 +23,22 @@ O cadastro grava produto, quantidade e horário no aparelho e gera um QR com o I
 
 ## Firebase e contas de teste
 
-Ao integrar o Firebase, registre um app Android com o pacote `br.edu.unisenai.rastreabilidade`, habilite o provedor de e-mail e senha e configure o Cloud Firestore. Copie `google-services.json` para `app/` no seu computador. O arquivo está no `.gitignore`. A tarefa NC1–NC4 adicionará os plugins, SDKs e regras, além do guia de implantação.
+1. No Firebase Console, registre um app Android com o pacote `br.edu.unisenai.rastreabilidade` no projeto da equipe. Copie o `google-services.json` para `app/` antes de sincronizar o Gradle. O arquivo é ignorado pelo Git.
+2. Habilite o provedor de e-mail e senha e crie o Cloud Firestore em modo de produção.
+3. Crie as duas contas de demonstração em Authentication. Para cada conta, crie no console o documento `usuarios/{uid}` com `perfil` do tipo string e valor `operador` ou `qualidade`.
+4. Publique o conteúdo de `firestore.rules` no projeto correto pelo console ou, com o Firebase CLI autenticado, rode `firebase deploy --only firestore:rules --project ID_DO_PROJETO`.
+5. Abra o app nas duas contas. O Operador de etapa vê o cadastro de lotes. A Qualidade pode abrir a consulta. Use **Sair** para trocar de conta.
 
-Crie uma conta exclusiva de demonstração para cada perfil e atribua o perfil pelo documento `usuarios/{uid}` no console. Preencha nesta seção o e-mail das duas contas de teste quando estiverem disponíveis. Distribua as senhas de demonstração pelo canal combinado com o professor.
+Compartilhe as credenciais de demonstração pelo canal combinado com o professor. Contas recém-cadastradas ficam aguardando a atribuição do perfil pelo console.
+
+### Dados compartilhados
+
+- `usuarios/{uid}` contém `perfil` e pode ter `nome` para identificar o autor de eventos.
+- `etapas/{etapaId}` contém `nome` e `ordem` (inteiro começando em 1).
+- `lotes/{loteId}` contém `produto`, `quantidade`, `criadoEm` (timestamp do servidor), `criadoPor` (UID), `status` (`ativo` ou `reprovado`) e `etapaAtual` (0 antes da primeira etapa).
+- `lotes/{loteId}/historico/{eventoId}` usa `tipo` (`etapa` ou `reprovacao`), `autorUid`, `autorNome` e `registradoEm` (timestamp do servidor). Eventos de etapa incluem `etapa` e `ordem`. Eventos de reprovação incluem `motivo`.
+
+O QR contém o `loteId`. Para abrir a consulta a partir da leitura, use o extra `HistoricoActivity.EXTRA_LOTE`.
 
 ## Evidências e entrega
 
