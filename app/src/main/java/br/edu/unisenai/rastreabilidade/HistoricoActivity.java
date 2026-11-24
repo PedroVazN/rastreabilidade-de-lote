@@ -29,12 +29,15 @@ import br.edu.unisenai.rastreabilidade.model.Evento;
 
 public class HistoricoActivity extends Activity {
     public static final String EXTRA_LOTE = "loteId";
+    private static final String ESTADO_MOTIVO = "motivo";
+    private static final String ESTADO_MOTIVO_LOTE = "motivoLote";
 
     private final HistoricoFirestore historico = new HistoricoFirestore();
     private EditText codigo;
     private TextView situacao;
     private TextView vazio;
     private Button reprovar;
+    private AlertDialog dialogoMotivo;
     private boolean qualidade;
     private HistoricoAdapter adapter;
     private ListenerRegistration loteListener;
@@ -60,7 +63,7 @@ public class HistoricoActivity extends Activity {
         situacao = findViewById(R.id.situacao);
         vazio = findViewById(R.id.vazio);
         reprovar = findViewById(R.id.reprovar);
-        reprovar.setOnClickListener(view -> pedirMotivo());
+        reprovar.setOnClickListener(view -> pedirMotivo(""));
         qualidade = LoginActivity.QUALIDADE.equals(getIntent().getStringExtra(LoginActivity.EXTRA_PERFIL));
         adapter = new HistoricoAdapter();
         RecyclerView lista = findViewById(R.id.eventos);
@@ -80,6 +83,10 @@ public class HistoricoActivity extends Activity {
         if (inicial != null) {
             codigo.setText(inicial);
             consultar();
+        }
+        if (estado != null && loteAtual != null && estado.getString(ESTADO_MOTIVO) != null
+                && loteAtual.equals(estado.getString(ESTADO_MOTIVO_LOTE))) {
+            pedirMotivo(estado.getString(ESTADO_MOTIVO));
         }
     }
 
@@ -101,6 +108,19 @@ public class HistoricoActivity extends Activity {
     protected void onSaveInstanceState(Bundle estado) {
         super.onSaveInstanceState(estado);
         estado.putString(EXTRA_LOTE, loteAtual);
+        if (dialogoMotivo != null && dialogoMotivo.isShowing()) {
+            EditText motivo = dialogoMotivo.findViewById(R.id.motivo);
+            estado.putString(ESTADO_MOTIVO, motivo.getText().toString());
+            estado.putString(ESTADO_MOTIVO_LOTE, loteAtual);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (dialogoMotivo != null) {
+            dialogoMotivo.dismiss();
+        }
+        super.onDestroy();
     }
 
     private void consultar() {
@@ -195,7 +215,7 @@ public class HistoricoActivity extends Activity {
         Toast.makeText(this, R.string.erro_historico, Toast.LENGTH_LONG).show();
     }
 
-    private void pedirMotivo() {
+    private void pedirMotivo(String inicial) {
         AlertDialog dialogo = new AlertDialog.Builder(this)
                 .setTitle(R.string.reprovar_lote)
                 .setMessage(R.string.reprovar_mensagem)
@@ -206,6 +226,10 @@ public class HistoricoActivity extends Activity {
         dialogo.setOnShowListener(aberto -> {
             EditText motivo = dialogo.findViewById(R.id.motivo);
             TextView erro = dialogo.findViewById(R.id.erro_motivo);
+            if (motivo.length() == 0) {
+                motivo.setText(inicial);
+                motivo.setSelection(motivo.length());
+            }
             dialogo.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
                 String texto = motivo.getText().toString().trim();
                 if (texto.isEmpty()) {
@@ -221,13 +245,15 @@ public class HistoricoActivity extends Activity {
                     return;
                 }
                 // O listener do lote mostra a reprovação; se as regras recusarem, o status volta a ativo.
-                historico.reprovar(loteAtual, texto, usuario.getUid(), getString(R.string.perfil_qualidade))
+                historico.reprovar(loteAtual, texto, usuario.getUid())
                         .addOnFailureListener(this, falha ->
                                 Toast.makeText(this, R.string.erro_reprovar, Toast.LENGTH_LONG).show());
                 reprovar.setVisibility(View.GONE);
                 dialogo.dismiss();
             });
         });
+        dialogo.setOnDismissListener(fechado -> dialogoMotivo = null);
+        dialogoMotivo = dialogo;
         dialogo.show();
     }
 

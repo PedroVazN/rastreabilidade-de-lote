@@ -1,6 +1,7 @@
 package br.edu.unisenai.rastreabilidade.data;
 
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
@@ -16,6 +17,8 @@ import br.edu.unisenai.rastreabilidade.model.Evento;
 
 public final class HistoricoFirestore {
     public static final String REPROVADO = "reprovado";
+    // Mesmo valor usado por nomeAutor() em firestore.rules.
+    private static final String NOME_PADRAO = "Qualidade";
 
     private final FirebaseFirestore banco = FirebaseFirestore.getInstance();
     private final CollectionReference lotes = banco.collection("lotes");
@@ -32,11 +35,15 @@ public final class HistoricoFirestore {
         return lotes.document(id).collection("historico").orderBy("registradoEm");
     }
 
-    public Task<Void> reprovar(String loteId, String motivo, String uid, String nomePadrao) {
+    public Task<Void> reprovar(String loteId, String motivo, String uid) {
         return banco.collection("usuarios").document(uid).get().continueWithTask(perfil -> {
-            String nome = perfil.isSuccessful() ? perfil.getResult().getString("nome") : null;
-            if (nome == null || nome.trim().isEmpty() || nome.length() > 100) {
-                nome = nomePadrao;
+            if (!perfil.isSuccessful()) {
+                return Tasks.forException(perfil.getException());
+            }
+            Object salvo = perfil.getResult().get("nome");
+            String nome = salvo instanceof String ? (String) salvo : "";
+            if (nome.trim().isEmpty() || nome.length() > 100) {
+                nome = NOME_PADRAO;
             }
             DocumentReference lote = lotes.document(loteId);
             WriteBatch reprovacao = banco.batch();
