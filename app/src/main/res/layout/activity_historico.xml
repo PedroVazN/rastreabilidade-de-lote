@@ -16,8 +16,6 @@
                 android:imeOptions="actionSearch" android:importantForAutofill="no"
                 android:inputType="textNoSuggestions" android:maxLength="64"
                 android:minHeight="48dp" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/codigos_exemplo" android:textColor="#5D5F60" android:textSize="12sp" />
             <Button android:id="@+id/consultar" android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:layout_marginTop="12dp"
                 android:backgroundTint="#131416" android:textColor="#FFFFFF"

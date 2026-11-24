@@ -30,11 +30,7 @@ public final class LotesLocais {
 
     public Lote ultimo() {
         String id = dados.getString("ultimo", null);
-        return id == null ? null : buscar(id);
-    }
-
-    public Lote buscar(String id) {
-        if ("ultimo".equals(id) || !dados.contains(id)) {
+        if (id == null) {
             return null;
         }
         String salvo = dados.getString(id, "{}");
