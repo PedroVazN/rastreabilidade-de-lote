@@ -221,7 +221,8 @@ public class MainActivity extends Activity {
         ((TextView) findViewById(R.id.resumo)).setText(resumo);
         ((TextView) findViewById(R.id.codigo)).setText(lote.id);
         ((ImageView) findViewById(R.id.qr)).setImageBitmap(qr);
-        findViewById(R.id.ver_historico).setVisibility(View.GONE);
+        findViewById(R.id.ver_historico).setOnClickListener(view -> startActivity(
+                new Intent(this, HistoricoActivity.class).putExtra(HistoricoActivity.EXTRA_LOTE, lote.id)));
         findViewById(R.id.etiqueta).setVisibility(View.VISIBLE);
     }
 }

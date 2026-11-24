@@ -14,7 +14,7 @@ Abra a pasta que contém `settings.gradle`. Use o JDK do Android Studio para o G
 
 ## Estado da base
 
-O app usa Java, layouts XML e ZXing. Após o login, o aplicativo mostra o perfil autorizado e abre a tela principal. O histórico de demonstração continua local enquanto as tarefas do [backlog](DOCS/backlog.md) avançam.
+O app usa Java, layouts XML e ZXing. Após o login, o aplicativo mostra o perfil autorizado e abre a tela principal. A consulta do histórico acompanha o lote e a subcoleção `historico` no Firestore enquanto as demais tarefas do [backlog](DOCS/backlog.md) avançam.
 
 O Operador de etapa cria o lote no Firestore. A etiqueta QR aparece após confirmação da gravação. O app recupera a última etiqueta daquele operador neste aparelho e acompanha o documento no Firestore.
 

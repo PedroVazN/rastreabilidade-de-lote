@@ -8,25 +8,34 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.MetadataChanges;
+
+import java.util.ArrayList;
 import java.util.List;
 
-import br.edu.unisenai.rastreabilidade.data.HistoricoExemplo;
-import br.edu.unisenai.rastreabilidade.data.LotesLocais;
+import br.edu.unisenai.rastreabilidade.data.HistoricoFirestore;
 import br.edu.unisenai.rastreabilidade.model.Evento;
 
 public class HistoricoActivity extends Activity {
     public static final String EXTRA_LOTE = "loteId";
 
-    private final HistoricoExemplo.Ouvinte ouvinte = this::mostrar;
+    private final HistoricoFirestore historico = new HistoricoFirestore();
     private EditText codigo;
     private TextView situacao;
     private TextView vazio;
     private HistoricoAdapter adapter;
+    private ListenerRegistration loteListener;
+    private ListenerRegistration eventosListener;
     private String loteAtual;
+    private Boolean reprovado;
+    private List<Evento> eventos;
 
     @Override
     protected void onCreate(Bundle estado) {
@@ -64,52 +73,115 @@ public class HistoricoActivity extends Activity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        if (loteAtual != null && loteListener == null) {
+            ouvir();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        parar();
+        super.onStop();
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle estado) {
         super.onSaveInstanceState(estado);
         estado.putString(EXTRA_LOTE, loteAtual);
     }
 
-    @Override
-    protected void onDestroy() {
-        HistoricoExemplo.parar(ouvinte);
-        super.onDestroy();
-    }
-
     private void consultar() {
         String id = codigo.getText().toString().trim();
+        limpar();
         if (id.isEmpty()) {
-            limpar();
             codigo.setError(getString(R.string.erro_codigo));
             codigo.requestFocus();
             return;
         }
-        if (!HistoricoExemplo.existe(id)) {
-            if (new LotesLocais(this).buscar(id) == null) {
-                limpar();
-                codigo.setError(getString(R.string.erro_lote_nao_encontrado));
-                codigo.requestFocus();
-                return;
-            }
-            HistoricoExemplo.incluir(id);
+        if (!HistoricoFirestore.codigoValido(id)) {
+            naoEncontrado();
+            return;
         }
         loteAtual = id;
         codigo.setError(null);
         getSystemService(InputMethodManager.class)
                 .hideSoftInputFromWindow(codigo.getWindowToken(), 0);
-        HistoricoExemplo.ouvir(id, ouvinte);
+        ouvir();
+    }
+
+    private void ouvir() {
+        parar();
+        loteListener = historico.lote(loteAtual).addSnapshotListener(MetadataChanges.INCLUDE,
+                (documento, erro) -> {
+                    if (erro != null || documento == null) {
+                        falhar();
+                        return;
+                    }
+                    if (!documento.exists()) {
+                        if (!documento.getMetadata().isFromCache()) {
+                            naoEncontrado();
+                        }
+                        return;
+                    }
+                    reprovado = HistoricoFirestore.REPROVADO.equals(documento.getString("status"));
+                    mostrar();
+                });
+        eventosListener = historico.eventos(loteAtual).addSnapshotListener((consulta, erro) -> {
+            if (erro != null || consulta == null) {
+                falhar();
+                return;
+            }
+            List<Evento> lidos = new ArrayList<>();
+            for (DocumentSnapshot documento : consulta.getDocuments()) {
+                Evento evento = HistoricoFirestore.converter(documento);
+                if (evento != null) {
+                    lidos.add(evento);
+                }
+            }
+            eventos = lidos;
+            mostrar();
+        });
+    }
+
+    private void parar() {
+        if (loteListener != null) {
+            loteListener.remove();
+            loteListener = null;
+        }
+        if (eventosListener != null) {
+            eventosListener.remove();
+            eventosListener = null;
+        }
     }
 
     private void limpar() {
-        HistoricoExemplo.parar(ouvinte);
+        parar();
         loteAtual = null;
+        reprovado = null;
+        eventos = null;
         situacao.setVisibility(View.GONE);
         vazio.setVisibility(View.GONE);
         adapter.mostrar(List.of());
     }
 
-    private void mostrar(String status, List<Evento> eventos) {
-        situacao.setText(HistoricoExemplo.REPROVADO.equals(status)
-                ? R.string.situacao_reprovado : R.string.situacao_ativo);
+    private void naoEncontrado() {
+        limpar();
+        codigo.setError(getString(R.string.erro_lote_nao_encontrado));
+        codigo.requestFocus();
+    }
+
+    private void falhar() {
+        limpar();
+        Toast.makeText(this, R.string.erro_historico, Toast.LENGTH_LONG).show();
+    }
+
+    private void mostrar() {
+        if (reprovado == null || eventos == null) {
+            return;
+        }
+        situacao.setText(reprovado ? R.string.situacao_reprovado : R.string.situacao_ativo);
         situacao.setVisibility(View.VISIBLE);
         vazio.setVisibility(eventos.isEmpty() ? View.VISIBLE : View.GONE);
         adapter.mostrar(eventos);
