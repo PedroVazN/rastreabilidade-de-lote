@@ -39,6 +39,7 @@ Compartilhe as credenciais de demonstração pelo canal combinado com o professo
 - `etapas/{etapaId}` contém `nome` e `ordem` (inteiro começando em 1).
 - `lotes/{loteId}` contém `produto`, `quantidade`, `criadoEm` (timestamp do servidor), `criadoPor` (UID), `status` (`ativo` ou `reprovado`) e `etapaAtual` (0 antes da primeira etapa).
 - `lotes/{loteId}/historico/{eventoId}` usa `tipo` (`etapa` ou `reprovacao`), `autorUid`, `autorNome` e `registradoEm` (timestamp do servidor). Eventos de etapa incluem `etapa` e `ordem`. Eventos de reprovação incluem `motivo`.
+- A reprovação grava em um único batch `status: reprovado` no lote e o evento com ID fixo `historico/reprovacao`. Só a Qualidade pode fazer essa transição, e apenas em lote `ativo`.
 
 O QR contém o `loteId`. Para abrir a consulta a partir da leitura, use o extra `HistoricoActivity.EXTRA_LOTE`.
 

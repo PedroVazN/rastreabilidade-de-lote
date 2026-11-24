@@ -1,18 +1,24 @@
 package br.edu.unisenai.rastreabilidade.data;
 
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
+
+import java.util.Map;
 
 import br.edu.unisenai.rastreabilidade.model.Evento;
 
 public final class HistoricoFirestore {
     public static final String REPROVADO = "reprovado";
 
-    private final CollectionReference lotes = FirebaseFirestore.getInstance().collection("lotes");
+    private final FirebaseFirestore banco = FirebaseFirestore.getInstance();
+    private final CollectionReference lotes = banco.collection("lotes");
 
     public static boolean codigoValido(String id) {
         return id.matches("[A-Za-z0-9_-]{1,64}") && !id.matches("__.*__");
@@ -24,6 +30,26 @@ public final class HistoricoFirestore {
 
     public Query eventos(String id) {
         return lotes.document(id).collection("historico").orderBy("registradoEm");
+    }
+
+    public Task<Void> reprovar(String loteId, String motivo, String uid, String nomePadrao) {
+        return banco.collection("usuarios").document(uid).get().continueWithTask(perfil -> {
+            String nome = perfil.isSuccessful() ? perfil.getResult().getString("nome") : null;
+            if (nome == null || nome.trim().isEmpty() || nome.length() > 100) {
+                nome = nomePadrao;
+            }
+            DocumentReference lote = lotes.document(loteId);
+            WriteBatch reprovacao = banco.batch();
+            reprovacao.update(lote, "status", REPROVADO);
+            reprovacao.set(lote.collection("historico").document(Evento.REPROVACAO), Map.of(
+                    "tipo", Evento.REPROVACAO,
+                    "motivo", motivo,
+                    "autorUid", uid,
+                    "autorNome", nome,
+                    "registradoEm", FieldValue.serverTimestamp()
+            ));
+            return reprovacao.commit();
+        });
     }
 
     public static Evento converter(DocumentSnapshot documento) {

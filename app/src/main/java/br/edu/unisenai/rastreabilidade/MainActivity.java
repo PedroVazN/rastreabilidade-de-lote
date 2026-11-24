@@ -73,7 +73,8 @@ public class MainActivity extends Activity {
         criar = findViewById(R.id.criar);
         criar.setOnClickListener(view -> criarLote());
         findViewById(R.id.consultar_historico).setOnClickListener(view ->
-                startActivity(new Intent(this, HistoricoActivity.class)));
+                startActivity(new Intent(this, HistoricoActivity.class)
+                        .putExtra(LoginActivity.EXTRA_PERFIL, perfil)));
 
         Object pendente = getLastNonConfigurationInstance();
         if (pendente instanceof GravacaoAnterior) {
