@@ -46,5 +46,6 @@
     <string name="evento_reprovado_por">Reprovado por %1$s</string>
     <string name="erro_codigo">Informe o código do lote.</string>
     <string name="erro_lote_nao_encontrado">Lote não encontrado. Confira o código.</string>
-    <string name="erro_gravar">Não foi possível salvar o lote neste aparelho.</string>
+    <string name="erro_gravar">Não foi possível salvar o lote no Firestore.</string>
+    <string name="salvando_lote">Aguardando confirmação do Firestore…</string>
 </resources>

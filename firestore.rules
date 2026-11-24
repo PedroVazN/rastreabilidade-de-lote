@@ -19,6 +19,25 @@ service cloud.firestore {
 
     match /lotes/{loteId} {
       allow read: if temPerfil();
+      allow create: if request.auth != null
+        && perfil() == 'operador'
+        && request.resource.data.keys().hasAll([
+          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual'
+        ])
+        && request.resource.data.produto is string
+        && request.resource.data.produto.size() <= 100
+        && request.resource.data.produto.matches('.*[^\\s].*')
+        && request.resource.data.quantidade is int
+        && request.resource.data.quantidade > 0
+        && request.resource.data.quantidade <= 2147483647
+        && request.resource.data.criadoPor == request.auth.uid
+        && request.resource.data.criadoEm == request.time
+        && request.resource.data.status == 'ativo'
+        && request.resource.data.etapaAtual is int
+        && request.resource.data.etapaAtual == 0;
 
       match /historico/{eventoId} {
         allow read: if temPerfil();
