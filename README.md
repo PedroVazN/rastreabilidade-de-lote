@@ -1,54 +1,82 @@
 # Rastreabilidade de Lote
 
-Projeto 7 da TechInova. O aplicativo acompanha a passagem de lotes por etapas da fabricação e permite que a Qualidade consulte o histórico ou reprove um lote com motivo.
+Aplicativo Android para identificar lotes de fabricação e consultar o que aconteceu com cada um. O Operador de etapa registra o produto e a quantidade e recebe uma etiqueta com QR Code. A Qualidade usa o código do lote para consultar seu histórico e, quando encontra uma não conformidade, registrar a reprovação com o motivo. Assim, os dois perfis consultam o mesmo registro de produção.
 
-## Integrantes
+## Como funciona
 
-- Pedro Vaz — [@PedroVazN](https://github.com/PedroVazN)
-- Nathan Ferreira Silva — [@NathanSec](https://github.com/NathanSec)
-- Marcio Petigrosso — [@petzada](https://github.com/petzada)
+| Operação | Quem usa | Resultado |
+| --- | --- | --- |
+| Cadastrar lote | Operador de etapa | O lote recebe um código único, data de criação, identificação do operador e situação inicial **Ativo**. |
+| Identificar lote | Operador de etapa | Após a confirmação da gravação, o aplicativo exibe a etiqueta. O QR Code contém o identificador do lote. A última etiqueta pode ser recuperada pelo mesmo operador no aparelho. |
+| Consultar histórico | Operador de etapa e Qualidade | A busca pelo código abre a situação do lote e os eventos em ordem cronológica. A tela acompanha as atualizações do Firestore e indica quando ainda não há eventos. |
+| Reprovar lote | Qualidade | Em um lote ativo, a Qualidade informa um motivo de até 300 caracteres. A mudança para **Reprovado** e o evento com motivo, autoria e horário são gravados juntos. |
 
-## Abrir no Android Studio
+**Exemplo de uso.** Ao cadastrar 120 unidades de uma peça, o operador recebe a etiqueta e pode abrir o histórico diretamente por ela. Se a inspeção encontrar uma medida fora da tolerância, a Qualidade busca o código e registra a ocorrência. Ao consultar o lote, o operador passa a ver a reprovação e seu motivo.
 
-Abra a pasta que contém `settings.gradle`. Use o JDK do Android Studio para o Gradle, instale o Android SDK 36 e execute o módulo `app` em um aparelho ou emulador Android 11 ou superior. Para gerar o APK no Windows, rode `.\gradlew.bat assembleDebug`. O APK é criado em `app/build/outputs/apk/debug/app-debug.apk`.
+**Em desenvolvimento.** O fluxo de produção por etapas prevê configurar a sequência, ler a etiqueta com a câmera e registrar o próximo avanço. As validações de salto, duplicidade e avanço após reprovação fazem parte dessa implementação. [Acompanhar no quadro do projeto](https://github.com/users/PedroVazN/projects/1)
 
-## Estado da base
+## Telas do aplicativo
 
-O app usa Java, layouts XML e ZXing. Após o login, o aplicativo mostra o perfil autorizado e abre a tela principal. A consulta do histórico acompanha o lote e a subcoleção `historico` no Firestore enquanto as demais tarefas do [backlog](DOCS/backlog.md) avançam.
+| Cadastro e etiqueta | Consulta do histórico | Histórico de lote reprovado |
+| --- | --- | --- |
+| ![Tela de cadastro de lote](DOCS/tela-cadastro.png) | ![Tela de consulta do histórico](DOCS/tela-historico.png) | ![Tela de histórico com reprovação](DOCS/tela-historico-reprovado.png) |
 
-O Operador de etapa cria o lote no Firestore. A etiqueta QR aparece após confirmação da gravação. O app recupera a última etiqueta daquele operador neste aparelho e acompanha o documento no Firestore.
+## Acesso e contas de demonstração
 
-- `MainActivity` conecta o formulário e a etiqueta.
-- `model/Lote` representa o lote.
-- `data/LotesLocais` guarda os registros da base local.
-- `res/layout` define a interface.
+A autenticação usa e-mail e senha. Cada conta tem um perfil definido pela equipe no Firestore. Uma conta recém-criada aguarda essa atribuição antes de acessar as operações. A opção **Sair** permite alternar entre as contas no mesmo aparelho.
 
-## Firebase e contas de teste
+| Conta de demonstração | Perfil no Firestore | O que experimentar |
+| --- | --- | --- |
+| Operador de etapa | `operador` | Cadastre um lote com quantidade inteira positiva, anote o código e abra a etiqueta. |
+| Qualidade | `qualidade` | Consulte o mesmo código, registre uma reprovação e confira o motivo no histórico. |
 
-1. No Firebase Console, registre um app Android com o pacote `br.edu.unisenai.rastreabilidade` no projeto da equipe. Copie o `google-services.json` para `app/` antes de sincronizar o Gradle. O arquivo é ignorado pelo Git.
-2. Habilite o provedor de e-mail e senha e crie o Cloud Firestore em modo de produção.
-3. Crie as duas contas de demonstração em Authentication. Para cada conta, crie no console o documento `usuarios/{uid}` com `perfil` do tipo string e valor `operador` ou `qualidade`.
-4. Publique o conteúdo de `firestore.rules` no projeto correto pelo console ou, com o Firebase CLI autenticado, rode `firebase deploy --only firestore:rules --project ID_DO_PROJETO`.
-5. Abra o app nas duas contas. O Operador de etapa vê o cadastro de lotes. A Qualidade pode abrir a consulta. Use **Sair** para trocar de conta.
+As credenciais das contas de demonstração são disponibilizadas pela equipe em canal privado.
 
-Compartilhe as credenciais de demonstração pelo canal combinado com o professor. Contas recém-cadastradas ficam aguardando a atribuição do perfil pelo console.
+## Executar no Android Studio
 
-### Dados compartilhados
+O projeto usa Java 17, layouts XML, Android SDK 36 para compilação e Android 11 (API 30) ou superior no aparelho. O Gradle Wrapper acompanha o repositório.
 
-- `usuarios/{uid}` contém `perfil` e pode ter `nome` para identificar o autor de eventos.
-- `etapas/{etapaId}` contém `nome` e `ordem` (inteiro começando em 1).
-- `lotes/{loteId}` contém `produto`, `quantidade`, `criadoEm` (timestamp do servidor), `criadoPor` (UID), `status` (`ativo` ou `reprovado`) e `etapaAtual` (0 antes da primeira etapa).
-- `lotes/{loteId}/historico/{eventoId}` usa `tipo` (`etapa` ou `reprovacao`), `autorUid`, `autorNome` e `registradoEm` (timestamp do servidor). Eventos de etapa incluem `etapa` e `ordem`. Eventos de reprovação incluem `motivo`.
-- A reprovação grava em um único batch `status: reprovado` no lote e o evento com ID fixo `historico/reprovacao`. Só a Qualidade pode fazer essa transição, e apenas em lote `ativo`. O `autorNome` precisa ser o `nome` de `usuarios/{uid}` ou, sem nome válido, `Qualidade`.
+1. Abra no Android Studio a pasta que contém `settings.gradle`.
+2. Coloque a configuração Android do Firebase da equipe em `app/google-services.json`. O pacote registrado deve ser `br.edu.unisenai.rastreabilidade`. Esse arquivo é ignorado pelo Git.
+3. Sincronize o Gradle. Para executar em um celular, habilite a depuração USB no Android, conecte o aparelho e autorize o computador.
+4. Selecione o aparelho como destino e execute o módulo `app`. Use uma das contas de demonstração para entrar.
 
-O QR contém o `loteId`. Para abrir a consulta a partir da leitura, use o extra `HistoricoActivity.EXTRA_LOTE`.
+Para gerar o APK de debug no Windows, execute na raiz do repositório:
 
-## Evidências e entrega
+```powershell
+.\gradlew.bat assembleDebug
+```
 
-O [print do cadastro local](DOCS/tela-cadastro.png) mostra a base no emulador. Adicione os prints dos dois perfis após testar o MVP. O [checklist da base](DOCS/Checklist-CORE.docx) está em `DOCS/`, junto ao [roteiro da apresentação](DOCS/roteiro.md). Salve o PDF dos slides nessa pasta. Anexe o APK da versão final à entrega ou a uma release do GitHub. Registre aqui o link acessível do vídeo quando a demonstração estiver gravada.
+O arquivo gerado fica em `app/build/outputs/apk/debug/app-debug.apk`.
 
-## Trabalho em equipe
+## Firebase e dados
 
-Use o [backlog](DOCS/backlog.md) para abrir uma issue por história. Passe cada issue de **A fazer** para **Fazendo** quando alguém assumir. Crie uma branch por issue, inclua `Closes #n` no corpo do PR e peça revisão de outro integrante. Mova para **Feito** depois de verificar os critérios. Todos os integrantes precisam abrir PRs próprios e revisar PRs de colegas.
+O aplicativo usa **Firebase Authentication** para identificar o usuário e **Cloud Firestore** para compartilhar lotes e eventos entre aparelhos. As regras do banco verificam o perfil e restringem as gravações. O horário de criação do lote e o horário da reprovação vêm do servidor.
 
-O grupo informou três integrantes. O enunciado cita quatro, então a formação precisa ser confirmada com o professor.
+| Caminho no Firestore | Conteúdo |
+| --- | --- |
+| `usuarios/{uid}` | Perfil de acesso e nome opcional para identificar o autor. O usuário pode consultar o próprio perfil. |
+| `lotes/{loteId}` | Produto, quantidade, autor e data de criação, situação e etapa atual. Um lote novo começa com `etapaAtual = 0`. |
+| `lotes/{loteId}/historico/{eventoId}` | Eventos ordenados por `registradoEm`. A reprovação usa o ID fixo `reprovacao` e guarda motivo, UID e nome do autor. |
+| `etapas/{etapaId}` | Estrutura prevista para as etapas de fabricação, com nome e ordem. |
+
+Para usar uma instância própria do Firebase, registre o aplicativo Android com o pacote indicado acima, habilite o provedor **E-mail/senha** e crie o banco Cloud Firestore. Para cada conta criada no Authentication, adicione um documento em `usuarios/{uid}` usando o UID da conta como ID e o campo de texto `perfil` com valor `operador` ou `qualidade`. Publique as [regras do Firestore](firestore.rules) no mesmo projeto antes de usar o aplicativo.
+
+## Organização do código
+
+| Componente | Responsabilidade |
+| --- | --- |
+| [Telas e adaptador](app/src/main/java/br/edu/unisenai/rastreabilidade) | Login e sessão, cadastro de lotes, geração do QR com ZXing e apresentação do histórico em RecyclerView. |
+| [Acesso a dados](app/src/main/java/br/edu/unisenai/rastreabilidade/data) | Cadastro e acompanhamento de lotes, consulta de eventos e gravação da reprovação no Firestore. |
+| [Modelos](app/src/main/java/br/edu/unisenai/rastreabilidade/model) | Representação de lotes e eventos no aplicativo. |
+| [Layouts XML](app/src/main/res/layout) | Formulários, etiqueta e itens da lista de histórico. |
+
+## Documentação
+
+- [Histórias de usuário e critérios de aceite](DOCS/backlog.md)
+- [Checklist de requisitos em Word](DOCS/Checklist-CORE.docx)
+- [Roteiro da apresentação](DOCS/roteiro.md)
+
+## Equipe
+
+[Pedro Vaz](https://github.com/PedroVazN) · [Nathan Ferreira Silva](https://github.com/NathanSec) · [Marcio Petigrosso](https://github.com/petzada)
