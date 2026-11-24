@@ -1,0 +1,11 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingHorizontal="20dp">
+    <EditText android:id="@+id/motivo" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:hint="@string/motivo"
+        android:importantForAutofill="no" android:inputType="textCapSentences|textMultiLine"
+        android:maxLength="300" android:minHeight="48dp" />
+    <TextView android:id="@+id/erro_motivo" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:accessibilityLiveRegion="polite"
+        android:textColor="#B3261E" android:visibility="gone" />
+</LinearLayout>

@@ -9,6 +9,11 @@ service cloud.firestore {
       return request.auth != null && perfil() in ['operador', 'qualidade'];
     }
 
+    function nomeAutor() {
+      let nome = get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('nome', '');
+      return nome is string && nome.trim().size() > 0 && nome.size() <= 100 ? nome : 'Qualidade';
+    }
+
     match /usuarios/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;
     }
@@ -38,9 +43,33 @@ service cloud.firestore {
         && request.resource.data.status == 'ativo'
         && request.resource.data.etapaAtual is int
         && request.resource.data.etapaAtual == 0;
+      allow update: if request.auth != null
+        && perfil() == 'qualidade'
+        && resource.data.status == 'ativo'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'reprovado'
+        && getAfter(/databases/$(database)/documents/lotes/$(loteId)/historico/reprovacao).data.tipo == 'reprovacao';
 
       match /historico/{eventoId} {
         allow read: if temPerfil();
+        allow create: if request.auth != null
+          && eventoId == 'reprovacao'
+          && perfil() == 'qualidade'
+          && get(/databases/$(database)/documents/lotes/$(loteId)).data.status == 'ativo'
+          && getAfter(/databases/$(database)/documents/lotes/$(loteId)).data.status == 'reprovado'
+          && request.resource.data.keys().hasAll([
+            'tipo', 'motivo', 'autorUid', 'autorNome', 'registradoEm'
+          ])
+          && request.resource.data.keys().hasOnly([
+            'tipo', 'motivo', 'autorUid', 'autorNome', 'registradoEm'
+          ])
+          && request.resource.data.tipo == 'reprovacao'
+          && request.resource.data.motivo is string
+          && request.resource.data.motivo.matches('(?s).*\\S.*')
+          && request.resource.data.motivo.size() <= 300
+          && request.resource.data.autorUid == request.auth.uid
+          && request.resource.data.autorNome == nomeAutor()
+          && request.resource.data.registradoEm == request.time;
       }
     }
   }

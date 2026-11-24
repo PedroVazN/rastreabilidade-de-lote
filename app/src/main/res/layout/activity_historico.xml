@@ -25,6 +25,10 @@
             android:layout_height="wrap_content" android:layout_marginTop="16dp"
             android:paddingHorizontal="8dp" android:textColor="#131416" android:textSize="16sp"
             android:textStyle="bold" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+        <Button android:id="@+id/reprovar" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="8dp"
+            android:backgroundTint="#B3261E" android:textColor="#FFFFFF"
+            android:text="@string/reprovar_lote" android:textAllCaps="false" android:visibility="gone" />
         <TextView android:id="@+id/vazio" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:layout_marginTop="8dp"
             android:paddingHorizontal="8dp" android:text="@string/historico_vazio"

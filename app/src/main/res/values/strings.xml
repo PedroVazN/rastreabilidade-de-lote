@@ -45,6 +45,13 @@
     <string name="evento_motivo">Motivo: %1$s</string>
     <string name="evento_registrado_por">Registrado por %1$s</string>
     <string name="evento_reprovado_por">Reprovado por %1$s</string>
+    <string name="reprovar_lote">Reprovar lote</string>
+    <string name="reprovar_mensagem">Informe o motivo. Depois da reprovação, nenhuma etapa poderá ser registrada neste lote.</string>
+    <string name="motivo">Motivo da reprovação</string>
+    <string name="reprovar">Reprovar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="erro_motivo">Informe o motivo da reprovação.</string>
+    <string name="erro_reprovar">Não foi possível reprovar. Confira a conexão e se o lote continua ativo.</string>
     <string name="erro_codigo">Informe o código do lote.</string>
     <string name="erro_lote_nao_encontrado">Lote não encontrado. Confira o código.</string>
     <string name="erro_historico">Não foi possível carregar o histórico. Confira a conexão e o seu perfil.</string>
