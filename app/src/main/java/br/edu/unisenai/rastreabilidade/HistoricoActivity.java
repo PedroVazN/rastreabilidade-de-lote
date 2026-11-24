@@ -36,6 +36,8 @@ public class HistoricoActivity extends Activity {
     private String loteAtual;
     private Boolean reprovado;
     private List<Evento> eventos;
+    private boolean loteLocal;
+    private boolean eventosLocais;
 
     @Override
     protected void onCreate(Bundle estado) {
@@ -109,6 +111,7 @@ public class HistoricoActivity extends Activity {
         getSystemService(InputMethodManager.class)
                 .hideSoftInputFromWindow(codigo.getWindowToken(), 0);
         ouvir();
+        mostrar();
     }
 
     private void ouvir() {
@@ -119,30 +122,35 @@ public class HistoricoActivity extends Activity {
                         falhar();
                         return;
                     }
+                    loteLocal = documento.getMetadata().isFromCache();
                     if (!documento.exists()) {
-                        if (!documento.getMetadata().isFromCache()) {
+                        if (!loteLocal) {
                             naoEncontrado();
+                            return;
                         }
-                        return;
+                        reprovado = null;
+                    } else {
+                        reprovado = HistoricoFirestore.REPROVADO.equals(documento.getString("status"));
                     }
-                    reprovado = HistoricoFirestore.REPROVADO.equals(documento.getString("status"));
                     mostrar();
                 });
-        eventosListener = historico.eventos(loteAtual).addSnapshotListener((consulta, erro) -> {
-            if (erro != null || consulta == null) {
-                falhar();
-                return;
-            }
-            List<Evento> lidos = new ArrayList<>();
-            for (DocumentSnapshot documento : consulta.getDocuments()) {
-                Evento evento = HistoricoFirestore.converter(documento);
-                if (evento != null) {
-                    lidos.add(evento);
-                }
-            }
-            eventos = lidos;
-            mostrar();
-        });
+        eventosListener = historico.eventos(loteAtual).addSnapshotListener(MetadataChanges.INCLUDE,
+                (consulta, erro) -> {
+                    if (erro != null || consulta == null) {
+                        falhar();
+                        return;
+                    }
+                    List<Evento> lidos = new ArrayList<>();
+                    for (DocumentSnapshot documento : consulta.getDocuments()) {
+                        Evento evento = HistoricoFirestore.converter(documento);
+                        if (evento != null) {
+                            lidos.add(evento);
+                        }
+                    }
+                    eventos = lidos;
+                    eventosLocais = consulta.getMetadata().isFromCache();
+                    mostrar();
+                });
     }
 
     private void parar() {
@@ -178,12 +186,24 @@ public class HistoricoActivity extends Activity {
     }
 
     private void mostrar() {
-        if (reprovado == null || eventos == null) {
-            return;
+        boolean carregado = reprovado != null && eventos != null;
+        if (carregado) {
+            situacao.setText(reprovado ? R.string.situacao_reprovado : R.string.situacao_ativo);
         }
-        situacao.setText(reprovado ? R.string.situacao_reprovado : R.string.situacao_ativo);
-        situacao.setVisibility(View.VISIBLE);
-        vazio.setVisibility(eventos.isEmpty() ? View.VISIBLE : View.GONE);
-        adapter.mostrar(eventos);
+        situacao.setVisibility(carregado ? View.VISIBLE : View.GONE);
+        adapter.mostrar(carregado ? eventos : List.of());
+
+        int aviso = 0;
+        if (!carregado || (eventos.isEmpty() && (loteLocal || eventosLocais))) {
+            aviso = R.string.aguardando_servidor;
+        } else if (loteLocal || eventosLocais) {
+            aviso = R.string.historico_local;
+        } else if (eventos.isEmpty()) {
+            aviso = R.string.historico_vazio;
+        }
+        if (aviso != 0) {
+            vazio.setText(aviso);
+        }
+        vazio.setVisibility(aviso != 0 ? View.VISIBLE : View.GONE);
     }
 }

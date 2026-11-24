@@ -38,6 +38,8 @@
     <string name="situacao_ativo">Situação: ativo</string>
     <string name="situacao_reprovado">Situação: reprovado</string>
     <string name="historico_vazio">Nenhuma etapa registrada para este lote.</string>
+    <string name="aguardando_servidor">Aguardando o servidor para carregar o histórico. Confira a conexão.</string>
+    <string name="historico_local">Sem confirmação do servidor. Mostrando o histórico salvo neste aparelho.</string>
     <string name="evento_etapa">%1$d. %2$s</string>
     <string name="evento_reprovacao">Lote reprovado</string>
     <string name="evento_motivo">Motivo: %1$s</string>
