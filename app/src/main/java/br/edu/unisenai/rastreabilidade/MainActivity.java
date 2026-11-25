@@ -13,6 +13,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.text.Editable;
+import android.text.TextWatcher;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -26,20 +28,31 @@ import com.google.zxing.WriterException;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
+import br.edu.unisenai.rastreabilidade.data.EtapasFirestore;
 import br.edu.unisenai.rastreabilidade.data.LotesFirestore;
+import br.edu.unisenai.rastreabilidade.model.Etapa;
 import br.edu.unisenai.rastreabilidade.model.Lote;
+import br.edu.unisenai.rastreabilidade.model.SequenciaEtapas;
 
 public class MainActivity extends Activity {
     private EditText produto;
     private EditText quantidade;
     private LotesFirestore lotes;
+    private EtapasFirestore etapasFirestore;
+    private EditText sequenciaEtapas;
+    private TextView sequenciaAtual;
+    private Button salvarEtapas;
     private Button criar;
     private boolean operador;
     private Task<Void> gravacao;
     private ListenerRegistration etiquetaListener;
+    private ListenerRegistration etapasListener;
     private boolean rolarAteEtiqueta;
+    private boolean alterandoSequencia;
+    private boolean edicaoSequencia;
 
     @Override
     protected void onCreate(Bundle estado) {
@@ -62,10 +75,32 @@ public class MainActivity extends Activity {
         produto = findViewById(R.id.produto);
         quantidade = findViewById(R.id.quantidade);
         lotes = new LotesFirestore(this, usuario.getUid());
+        etapasFirestore = new EtapasFirestore();
         operador = LoginActivity.OPERADOR.equals(perfil);
         ((TextView) findViewById(R.id.perfil_atual)).setText(operador
                 ? R.string.perfil_operador : R.string.perfil_qualidade);
         findViewById(R.id.form_lote).setVisibility(operador ? View.VISIBLE : View.GONE);
+        findViewById(R.id.form_etapas).setVisibility(operador ? View.GONE : View.VISIBLE);
+        sequenciaEtapas = findViewById(R.id.sequencia_etapas);
+        sequenciaEtapas.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence texto, int inicio, int quantidade, int depois) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence texto, int inicio, int antes, int quantidade) {
+                if (!alterandoSequencia) {
+                    edicaoSequencia = true;
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable texto) {
+            }
+        });
+        sequenciaAtual = findViewById(R.id.sequencia_atual);
+        salvarEtapas = findViewById(R.id.salvar_etapas);
+        salvarEtapas.setOnClickListener(view -> salvarEtapas());
         findViewById(R.id.sair).setOnClickListener(view -> {
             FirebaseAuth.getInstance().signOut();
             voltarAoLogin();
@@ -90,13 +125,77 @@ public class MainActivity extends Activity {
             if (gravacao != null) {
                 acompanharGravacao();
             }
+        } else {
+            observarEtapas();
         }
     }
 
     @Override
     protected void onStop() {
         pararObservacao();
+        pararObservacaoEtapas();
         super.onStop();
+    }
+
+    private void observarEtapas() {
+        pararObservacaoEtapas();
+        etapasListener = etapasFirestore.documento().addSnapshotListener(this, (snapshot, erro) -> {
+            if (erro != null) {
+                sequenciaAtual.setText(R.string.erro_carregar_etapas);
+                return;
+            }
+            if (snapshot == null) {
+                sequenciaAtual.setText(R.string.erro_carregar_etapas);
+                return;
+            }
+            if (!snapshot.exists()) {
+                sequenciaAtual.setText(R.string.etapas_nao_cadastradas);
+                return;
+            }
+            try {
+                List<Etapa> etapas = SequenciaEtapas.deFirestore(snapshot.get("etapas"));
+                if (!edicaoSequencia) {
+                    alterandoSequencia = true;
+                    sequenciaEtapas.setText(SequenciaEtapas.paraTexto(etapas));
+                    alterandoSequencia = false;
+                }
+                sequenciaAtual.setText(getString(R.string.etapas_atuais,
+                        SequenciaEtapas.paraTexto(etapas)));
+            } catch (IllegalArgumentException e) {
+                alterandoSequencia = false;
+                sequenciaAtual.setText(R.string.erro_carregar_etapas);
+            }
+        });
+    }
+
+    private void pararObservacaoEtapas() {
+        if (etapasListener != null) {
+            etapasListener.remove();
+            etapasListener = null;
+        }
+    }
+
+    private void salvarEtapas() {
+        List<Etapa> etapas;
+        try {
+            etapas = SequenciaEtapas.analisar(sequenciaEtapas.getText().toString());
+        } catch (IllegalArgumentException e) {
+            sequenciaEtapas.setError(getString(R.string.erro_sequencia_etapas));
+            sequenciaEtapas.requestFocus();
+            return;
+        }
+        salvarEtapas.setEnabled(false);
+        sequenciaEtapas.setEnabled(false);
+        etapasFirestore.salvar(etapas).addOnCompleteListener(this, tarefa -> {
+            salvarEtapas.setEnabled(true);
+            sequenciaEtapas.setEnabled(true);
+            if (tarefa.isSuccessful()) {
+                edicaoSequencia = false;
+                Toast.makeText(this, R.string.etapas_salvas, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, R.string.erro_salvar_etapas, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     @Override

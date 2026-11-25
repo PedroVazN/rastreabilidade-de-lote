@@ -22,16 +22,32 @@ service cloud.firestore {
       allow read: if temPerfil();
     }
 
+    match /configuracao/etapas {
+      allow read: if temPerfil();
+      allow create, update: if request.auth != null
+        && perfil() == 'qualidade'
+        && request.resource.data.keys().hasOnly(['etapas'])
+        && request.resource.data.keys().hasAll(['etapas'])
+        && request.resource.data.etapas is list
+        && request.resource.data.etapas.size() > 0
+        && request.resource.data.etapas.size() <= 100;
+    }
+
     match /lotes/{loteId} {
       allow read: if temPerfil();
       allow create: if request.auth != null
         && perfil() == 'operador'
         && request.resource.data.keys().hasAll([
-          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual'
+          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual', 'etapas'
         ])
         && request.resource.data.keys().hasOnly([
-          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual'
+          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual', 'etapas'
         ])
+        && request.resource.data.etapas is list
+        && request.resource.data.etapas.size() > 0
+        && request.resource.data.etapas == get(
+          /databases/$(database)/documents/configuracao/etapas
+        ).data.etapas
         && request.resource.data.produto is string
         && request.resource.data.produto.size() <= 100
         && request.resource.data.produto.matches('.*[^\\s].*')

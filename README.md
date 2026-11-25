@@ -7,6 +7,7 @@ Aplicativo Android para identificar lotes de fabricação e consultar o que acon
 | Operação | Quem usa | Resultado |
 | --- | --- | --- |
 | Cadastrar lote | Operador de etapa | O lote recebe um código único, data de criação, identificação do operador e situação inicial **Ativo**. |
+| Configurar etapas | Qualidade | Salva uma sequência compartilhada; cada lote recebe uma cópia imutável da ordem vigente no momento do cadastro. |
 | Identificar lote | Operador de etapa | Após a confirmação da gravação, o aplicativo exibe a etiqueta. O QR Code contém o identificador do lote. A última etiqueta pode ser recuperada pelo mesmo operador no aparelho. |
 | Consultar histórico | Operador de etapa e Qualidade | A busca pelo código abre a situação do lote e os eventos em ordem cronológica. A tela acompanha as atualizações do Firestore e indica quando ainda não há eventos. |
 | Reprovar lote | Qualidade | Em um lote ativo, a Qualidade informa um motivo de até 300 caracteres. A mudança para **Reprovado** e o evento com motivo, autoria e horário são gravados juntos. |
@@ -56,9 +57,11 @@ O aplicativo usa **Firebase Authentication** para identificar o usuário e **Clo
 | Caminho no Firestore | Conteúdo |
 | --- | --- |
 | `usuarios/{uid}` | Perfil de acesso e nome opcional para identificar o autor. O usuário pode consultar o próprio perfil. |
-| `lotes/{loteId}` | Produto, quantidade, autor e data de criação, situação e etapa atual. Um lote novo começa com `etapaAtual = 0`. |
+| `lotes/{loteId}` | Produto, quantidade, autor e data de criação, situação, etapa atual e a cópia da sequência de etapas vigente no cadastro. Um lote novo começa com `etapaAtual = 0`. |
 | `lotes/{loteId}/historico/{eventoId}` | Eventos ordenados por `registradoEm`. A reprovação usa o ID fixo `reprovacao` e guarda motivo, UID e nome do autor. |
-| `etapas/{etapaId}` | Estrutura prevista para as etapas de fabricação, com nome e ordem. |
+| `configuracao/etapas` | Documento compartilhado com o array `etapas`; cada item contém `nome` e posição `ordem` iniciada em 1. Somente a Qualidade pode criar ou alterar a configuração. |
+
+Na tela da Qualidade, informe uma etapa por linha. A posição é a ordem da linha, começando em 1; nomes vazios e sequências com mais de 100 etapas são recusados. O cadastro de lote lê a configuração e grava sua cópia no mesmo transaction do Firestore, para que mudanças futuras não alterem lotes existentes. Para usar regras atualizadas, publique também as alterações em [firestore.rules](firestore.rules).
 
 Para usar uma instância própria do Firebase, registre o aplicativo Android com o pacote indicado acima, habilite o provedor **E-mail/senha** e crie o banco Cloud Firestore. Para cada conta criada no Authentication, adicione um documento em `usuarios/{uid}` usando o UID da conta como ID e o campo de texto `perfil` com valor `operador` ou `qualidade`. Publique as [regras do Firestore](firestore.rules) no mesmo projeto antes de usar o aplicativo.
 
@@ -67,7 +70,7 @@ Para usar uma instância própria do Firebase, registre o aplicativo Android com
 | Componente | Responsabilidade |
 | --- | --- |
 | [Telas e adaptador](app/src/main/java/br/edu/unisenai/rastreabilidade) | Login e sessão, cadastro de lotes, geração do QR com ZXing e apresentação do histórico em RecyclerView. |
-| [Acesso a dados](app/src/main/java/br/edu/unisenai/rastreabilidade/data) | Cadastro e acompanhamento de lotes, consulta de eventos e gravação da reprovação no Firestore. |
+| [Acesso a dados](app/src/main/java/br/edu/unisenai/rastreabilidade/data) | Configuração das etapas, cadastro e acompanhamento de lotes, consulta de eventos e gravação da reprovação no Firestore. |
 | [Modelos](app/src/main/java/br/edu/unisenai/rastreabilidade/model) | Representação de lotes e eventos no aplicativo. |
 | [Layouts XML](app/src/main/res/layout) | Formulários, etiqueta e itens da lista de histórico. |
 

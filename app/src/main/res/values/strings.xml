@@ -55,6 +55,17 @@
     <string name="erro_codigo">Informe o código do lote.</string>
     <string name="erro_lote_nao_encontrado">Lote não encontrado. Confira o código.</string>
     <string name="erro_historico">Não foi possível carregar o histórico. Confira a conexão e o seu perfil.</string>
-    <string name="erro_gravar">Não foi possível salvar o lote no Firestore.</string>
+    <string name="erro_gravar">Não foi possível salvar o lote. Confira a conexão e se a Qualidade já cadastrou as etapas.</string>
     <string name="salvando_lote">Aguardando confirmação do Firestore…</string>
+    <string name="configurar_etapas">Sequência de fabricação</string>
+    <string name="carregando_etapas">Carregando sequência compartilhada…</string>
+    <string name="etapas_nao_cadastradas">Nenhuma sequência foi cadastrada.</string>
+    <string name="etapas_atuais">Sequência atual:\n%1$s</string>
+    <string name="erro_carregar_etapas">Não foi possível carregar uma sequência válida do Firestore.</string>
+    <string name="uma_etapa_por_linha">Informe uma etapa por linha. A posição segue a ordem das linhas.</string>
+    <string name="exemplo_etapas">corte\nsolda\npintura\ninspeção final</string>
+    <string name="salvar_etapas">Salvar sequência</string>
+    <string name="erro_sequencia_etapas">Informe nomes válidos, um por linha, sem linhas vazias.</string>
+    <string name="etapas_salvas">Sequência salva para todos os aparelhos.</string>
+    <string name="erro_salvar_etapas">Não foi possível salvar a sequência. Confira a conexão e o perfil.</string>
 </resources>

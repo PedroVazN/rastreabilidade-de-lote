@@ -11,9 +11,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.List;
 import java.util.Map;
 
+import br.edu.unisenai.rastreabilidade.model.Etapa;
 import br.edu.unisenai.rastreabilidade.model.Lote;
+import br.edu.unisenai.rastreabilidade.model.SequenciaEtapas;
 
 public final class LotesFirestore {
     private final CollectionReference lotes = FirebaseFirestore.getInstance().collection("lotes");
@@ -27,14 +30,25 @@ public final class LotesFirestore {
 
     public Task<Void> criar(String produto, int quantidade) {
         DocumentReference documento = lotes.document();
-        return documento.set(Map.of(
-                "produto", produto,
-                "quantidade", quantidade,
-                "criadoEm", FieldValue.serverTimestamp(),
-                "criadoPor", uid,
-                "status", "ativo",
-                "etapaAtual", 0
-        )).continueWithTask(tarefa -> {
+        DocumentReference configuracaoEtapas = FirebaseFirestore.getInstance()
+                .collection("configuracao").document("etapas");
+        return FirebaseFirestore.getInstance().<Void>runTransaction(transacao -> {
+            DocumentSnapshot configuracao = transacao.get(configuracaoEtapas);
+            if (!configuracao.exists()) {
+                throw new IllegalStateException("A Qualidade ainda não cadastrou as etapas.");
+            }
+            List<Etapa> etapas = SequenciaEtapas.deFirestore(configuracao.get("etapas"));
+            transacao.set(documento, Map.of(
+                    "produto", produto,
+                    "quantidade", quantidade,
+                    "criadoEm", FieldValue.serverTimestamp(),
+                    "criadoPor", uid,
+                    "status", "ativo",
+                    "etapaAtual", 0,
+                    "etapas", SequenciaEtapas.paraFirestore(etapas)
+            ));
+            return null;
+        }).continueWithTask(tarefa -> {
             if (tarefa.isSuccessful()) {
                 etiquetas.edit().putString(uid, documento.getId()).apply();
             }
