@@ -11,8 +11,11 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import br.edu.unisenai.rastreabilidade.model.Etapa;
 import br.edu.unisenai.rastreabilidade.model.Lote;
 
 public final class LotesFirestore {
@@ -25,21 +28,32 @@ public final class LotesFirestore {
         this.uid = uid;
     }
 
-    public Task<Void> criar(String produto, int quantidade) {
+    public Task<Void> criar(String produto, int quantidade, List<Etapa> sequencia) {
         DocumentReference documento = lotes.document();
-        return documento.set(Map.of(
+        if (sequencia == null || sequencia.isEmpty()) {
+            throw new IllegalArgumentException("A sequência de etapas não pode estar vazia.");
+        }
+
+        List<Map<String, Object>> etapasDoLote = new ArrayList<>();
+        for (Etapa etapa : sequencia) {
+            etapasDoLote.add(Map.of(
+                    "nome", etapa.nome,
+                    "ordem", etapa.ordem
+            ));
+        }
+
+        Task<Void> tarefa = documento.set(Map.of(
                 "produto", produto,
                 "quantidade", quantidade,
                 "criadoEm", FieldValue.serverTimestamp(),
                 "criadoPor", uid,
                 "status", "ativo",
-                "etapaAtual", 0
-        )).continueWithTask(tarefa -> {
-            if (tarefa.isSuccessful()) {
-                etiquetas.edit().putString(uid, documento.getId()).apply();
-            }
-            return tarefa;
-        });
+                "etapaAtual", 0,
+                "etapas", etapasDoLote
+        ));
+        tarefa.addOnSuccessListener(resultado ->
+                etiquetas.edit().putString(uid, documento.getId()).apply());
+        return tarefa;
     }
 
     public DocumentReference ultimaEtiqueta() {

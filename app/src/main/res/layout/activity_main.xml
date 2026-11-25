@@ -15,6 +15,24 @@
             android:layout_height="wrap_content" android:layout_marginTop="12dp"
             android:backgroundTint="#FFFFFF" android:textColor="#131416"
             android:text="@string/consultar_historico" android:textAllCaps="false" />
+        <LinearLayout android:id="@+id/form_etapas" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:orientation="vertical"
+            android:background="@drawable/folha" android:padding="20dp" android:visibility="gone">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/etapas_titulo" android:textSize="18sp" android:textStyle="bold"
+                android:accessibilityHeading="true" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:text="@string/etapas_instrucao" />
+            <EditText android:id="@+id/etapas_sequencia" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:gravity="top|start" android:hint="@string/etapas_hint"
+                android:inputType="textCapSentences|textMultiLine" android:minHeight="120dp"
+                android:minLines="4" />
+            <Button android:id="@+id/btn_salvar_etapas" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:backgroundTint="#131416" android:textColor="#FFFFFF"
+                android:text="@string/etapas_salvar" android:textAllCaps="false" />
+        </LinearLayout>
         <LinearLayout android:id="@+id/form_lote" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" android:orientation="vertical"
             android:background="@drawable/folha" android:padding="20dp">
