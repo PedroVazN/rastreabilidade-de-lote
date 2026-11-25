@@ -20,6 +20,17 @@ service cloud.firestore {
 
     match /etapas/{etapaId} {
       allow read: if temPerfil();
+      allow create, update: if request.auth != null
+        && perfil() == 'qualidade'
+        && request.resource.data.keys().hasAll(['nome', 'ordem'])
+        && request.resource.data.keys().hasOnly(['nome', 'ordem'])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.matches('.*[^\\s].*')
+        && request.resource.data.ordem is int
+        && request.resource.data.ordem > 0
+        && etapaId.matches('^[1-9][0-9]*$')
+        && int(etapaId) == request.resource.data.ordem;
+      allow delete: if request.auth != null && perfil() == 'qualidade';
     }
 
     match /lotes/{loteId} {
@@ -27,10 +38,10 @@ service cloud.firestore {
       allow create: if request.auth != null
         && perfil() == 'operador'
         && request.resource.data.keys().hasAll([
-          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual'
+          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual', 'etapas'
         ])
         && request.resource.data.keys().hasOnly([
-          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual'
+          'produto', 'quantidade', 'criadoEm', 'criadoPor', 'status', 'etapaAtual', 'etapas'
         ])
         && request.resource.data.produto is string
         && request.resource.data.produto.size() <= 100
@@ -42,7 +53,9 @@ service cloud.firestore {
         && request.resource.data.criadoEm == request.time
         && request.resource.data.status == 'ativo'
         && request.resource.data.etapaAtual is int
-        && request.resource.data.etapaAtual == 0;
+        && request.resource.data.etapaAtual == 0
+        && request.resource.data.etapas is list
+        && request.resource.data.etapas.size() > 0;
       allow update: if request.auth != null
         && perfil() == 'qualidade'
         && resource.data.status == 'ativo'

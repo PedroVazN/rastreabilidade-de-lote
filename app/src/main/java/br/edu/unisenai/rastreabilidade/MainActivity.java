@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.text.TextWatcher;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.inputmethod.InputMethodManager;
@@ -25,18 +26,27 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
+import br.edu.unisenai.rastreabilidade.data.EtapasFirestore;
 import br.edu.unisenai.rastreabilidade.data.LotesFirestore;
+import br.edu.unisenai.rastreabilidade.model.Etapa;
 import br.edu.unisenai.rastreabilidade.model.Lote;
 
 public class MainActivity extends Activity {
     private EditText produto;
     private EditText quantidade;
+    private EditText etapasSequencia;
     private LotesFirestore lotes;
+    private EtapasFirestore etapas;
     private Button criar;
+    private Button salvarEtapas;
     private boolean operador;
+    private boolean carregandoEtapas;
+    private boolean editouEtapasDuranteCarregamento;
     private Task<Void> gravacao;
     private ListenerRegistration etiquetaListener;
     private boolean rolarAteEtiqueta;
@@ -62,10 +72,29 @@ public class MainActivity extends Activity {
         produto = findViewById(R.id.produto);
         quantidade = findViewById(R.id.quantidade);
         lotes = new LotesFirestore(this, usuario.getUid());
+        etapas = new EtapasFirestore();
+        etapasSequencia = findViewById(R.id.etapas_sequencia);
+        etapasSequencia.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence texto, int inicio, int quantidade, int depois) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence texto, int inicio, int antes, int quantidade) {
+                if (carregandoEtapas) {
+                    editouEtapasDuranteCarregamento = true;
+                }
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable texto) {
+            }
+        });
         operador = LoginActivity.OPERADOR.equals(perfil);
         ((TextView) findViewById(R.id.perfil_atual)).setText(operador
                 ? R.string.perfil_operador : R.string.perfil_qualidade);
         findViewById(R.id.form_lote).setVisibility(operador ? View.VISIBLE : View.GONE);
+        findViewById(R.id.form_etapas).setVisibility(operador ? View.GONE : View.VISIBLE);
         findViewById(R.id.sair).setOnClickListener(view -> {
             FirebaseAuth.getInstance().signOut();
             voltarAoLogin();
@@ -75,6 +104,11 @@ public class MainActivity extends Activity {
         findViewById(R.id.consultar_historico).setOnClickListener(view ->
                 startActivity(new Intent(this, HistoricoActivity.class)
                         .putExtra(LoginActivity.EXTRA_PERFIL, perfil)));
+        salvarEtapas = findViewById(R.id.btn_salvar_etapas);
+        salvarEtapas.setOnClickListener(view -> salvarSequencia());
+        if (!operador) {
+            carregarSequencia();
+        }
 
         Object pendente = getLastNonConfigurationInstance();
         if (pendente instanceof GravacaoAnterior) {
@@ -133,8 +167,83 @@ public class MainActivity extends Activity {
             return;
         }
 
-        gravacao = lotes.criar(nome, total);
-        acompanharGravacao();
+        int quantidadeLote = total;
+        criar.setEnabled(false);
+        criar.setText(R.string.salvando_lote);
+        etapas.carregar(sequencia -> {
+            if (sequencia.isEmpty()) {
+                criar.setEnabled(true);
+                criar.setText(R.string.criar);
+                Toast.makeText(this, R.string.erro_etapas_nao_cadastradas, Toast.LENGTH_LONG).show();
+                return;
+            }
+            gravacao = lotes.criar(nome, quantidadeLote, sequencia);
+            acompanharGravacao();
+        }, erro -> {
+            criar.setEnabled(true);
+            criar.setText(R.string.criar);
+            Toast.makeText(this, R.string.erro_carregar_etapas, Toast.LENGTH_LONG).show();
+        });
+    }
+
+    private void carregarSequencia() {
+        carregandoEtapas = true;
+        editouEtapasDuranteCarregamento = false;
+        etapas.carregar(sequencia -> {
+            carregandoEtapas = false;
+            if (editouEtapasDuranteCarregamento) {
+                return;
+            }
+            StringBuilder texto = new StringBuilder();
+            for (Etapa etapa : sequencia) {
+                if (texto.length() > 0) {
+                    texto.append('\n');
+                }
+                texto.append(etapa.nome);
+            }
+            etapasSequencia.setText(texto.toString());
+        }, erro -> {
+            carregandoEtapas = false;
+            Toast.makeText(this, R.string.erro_carregar_etapas, Toast.LENGTH_LONG).show();
+        });
+    }
+
+    private void salvarSequencia() {
+        if (operador) {
+            return;
+        }
+
+        String texto = etapasSequencia.getText().toString();
+        if (texto.isEmpty()) {
+            etapasSequencia.setError(getString(R.string.erro_etapas_vazias));
+            etapasSequencia.requestFocus();
+            return;
+        }
+
+        String[] nomes = texto.split("\\R", -1);
+        List<Etapa> sequencia = new ArrayList<>();
+        for (int i = 0; i < nomes.length; i++) {
+            String nome = nomes[i].trim();
+            if (nome.isEmpty()) {
+                etapasSequencia.setError(getString(R.string.erro_etapas_vazias));
+                etapasSequencia.requestFocus();
+                return;
+            }
+            sequencia.add(new Etapa(nome, i + 1));
+        }
+
+        etapasSequencia.setError(null);
+        salvarEtapas.setEnabled(false);
+        salvarEtapas.setText(R.string.etapas_salvando);
+        etapas.salvar(sequencia, resultado -> {
+            salvarEtapas.setEnabled(true);
+            salvarEtapas.setText(R.string.etapas_salvar);
+            Toast.makeText(this, R.string.etapas_salvas, Toast.LENGTH_SHORT).show();
+        }, erro -> {
+            salvarEtapas.setEnabled(true);
+            salvarEtapas.setText(R.string.etapas_salvar);
+            Toast.makeText(this, R.string.erro_salvar_etapas, Toast.LENGTH_LONG).show();
+        });
     }
 
     private void acompanharGravacao() {
