@@ -1,6 +1,7 @@
 package br.edu.unisenai.rastreabilidade;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -20,6 +21,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.BarcodeFormat;
@@ -32,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 
 import br.edu.unisenai.rastreabilidade.data.EtapasFirestore;
+import br.edu.unisenai.rastreabilidade.data.HistoricoFirestore;
 import br.edu.unisenai.rastreabilidade.data.LotesFirestore;
 import br.edu.unisenai.rastreabilidade.model.Etapa;
 import br.edu.unisenai.rastreabilidade.model.Lote;
@@ -42,9 +47,12 @@ public class MainActivity extends Activity {
     private EditText etapasSequencia;
     private LotesFirestore lotes;
     private EtapasFirestore etapas;
+    private final HistoricoFirestore historico = new HistoricoFirestore();
     private Button criar;
+    private Button lerQr;
     private Button salvarEtapas;
     private boolean operador;
+    private String uid;
     private boolean carregandoEtapas;
     private boolean editouEtapasDuranteCarregamento;
     private Task<Void> gravacao;
@@ -61,6 +69,7 @@ public class MainActivity extends Activity {
             voltarAoLogin();
             return;
         }
+        uid = usuario.getUid();
         setContentView(R.layout.activity_main);
         findViewById(R.id.tela).setOnApplyWindowInsetsListener((view, insets) -> {
             android.graphics.Insets barras = insets.getInsets(WindowInsets.Type.systemBars()
@@ -101,6 +110,8 @@ public class MainActivity extends Activity {
         });
         criar = findViewById(R.id.criar);
         criar.setOnClickListener(view -> criarLote());
+        lerQr = findViewById(R.id.ler_qr);
+        lerQr.setOnClickListener(view -> abrirLeitorQr());
         findViewById(R.id.consultar_historico).setOnClickListener(view ->
                 startActivity(new Intent(this, HistoricoActivity.class)
                         .putExtra(LoginActivity.EXTRA_PERFIL, perfil)));
@@ -244,6 +255,71 @@ public class MainActivity extends Activity {
             salvarEtapas.setText(R.string.etapas_salvar);
             Toast.makeText(this, R.string.erro_salvar_etapas, Toast.LENGTH_LONG).show();
         });
+    }
+
+    private void abrirLeitorQr() {
+        GmsBarcodeScannerOptions opcoes = new GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build();
+        lerQr.setEnabled(false);
+        GmsBarcodeScanning.getClient(this, opcoes).startScan()
+                .addOnSuccessListener(codigo -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    String loteId = codigo.getRawValue();
+                    if (loteId == null || !HistoricoFirestore.codigoValido(loteId.trim())) {
+                        Toast.makeText(this, R.string.erro_qr_lote, Toast.LENGTH_LONG).show();
+                        lerQr.setEnabled(true);
+                        return;
+                    }
+                    String id = loteId.trim();
+                    historico.carregarProximaEtapa(id).addOnCompleteListener(tarefa -> {
+                        if (isFinishing() || isDestroyed()) {
+                            return;
+                        }
+                        if (!tarefa.isSuccessful() || tarefa.getResult() == null) {
+                            int mensagem = tarefa.getException() instanceof IllegalArgumentException
+                                    ? R.string.erro_qr_lote : R.string.erro_carregar_qr_lote;
+                            Toast.makeText(this, mensagem, Toast.LENGTH_LONG).show();
+                            lerQr.setEnabled(true);
+                            return;
+                        }
+                        confirmarEtapa(id, tarefa.getResult());
+                    });
+                })
+                .addOnCanceledListener(() -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        lerQr.setEnabled(true);
+                    }
+                })
+                .addOnFailureListener(erro -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    Toast.makeText(this, R.string.erro_leitura_qr, Toast.LENGTH_LONG).show();
+                    lerQr.setEnabled(true);
+                });
+    }
+
+    private void confirmarEtapa(String loteId, Etapa etapa) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.confirmar_etapa)
+                .setMessage(getString(R.string.confirmar_etapa_mensagem, etapa.nome))
+                .setNegativeButton(R.string.cancelar, (dialogo, escolha) -> lerQr.setEnabled(true))
+                .setPositiveButton(R.string.confirmar, (dialogo, escolha) ->
+                        historico.registrarProximaEtapa(loteId, etapa, uid)
+                                .addOnCompleteListener(this, tarefa -> {
+                                    lerQr.setEnabled(true);
+                                    if (tarefa.isSuccessful()) {
+                                        Toast.makeText(this, R.string.etapa_salva, Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(this, R.string.erro_registrar_etapa,
+                                                Toast.LENGTH_LONG).show();
+                                    }
+                                }))
+                .setOnCancelListener(dialogo -> lerQr.setEnabled(true))
+                .show();
     }
 
     private void acompanharGravacao() {

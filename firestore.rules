@@ -14,6 +14,11 @@ service cloud.firestore {
       return nome is string && nome.trim().size() > 0 && nome.size() <= 100 ? nome : 'Qualidade';
     }
 
+    function nomeOperador() {
+      let nome = get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('nome', '');
+      return nome is string && nome.trim().size() > 0 && nome.size() <= 100 ? nome : 'Operador';
+    }
+
     match /usuarios/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;
     }
@@ -57,32 +62,61 @@ service cloud.firestore {
         && request.resource.data.etapas is list
         && request.resource.data.etapas.size() > 0;
       allow update: if request.auth != null
-        && perfil() == 'qualidade'
-        && resource.data.status == 'ativo'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status == 'reprovado'
-        && getAfter(/databases/$(database)/documents/lotes/$(loteId)/historico/reprovacao).data.tipo == 'reprovacao';
+        && ((perfil() == 'qualidade'
+          && resource.data.status == 'ativo'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status == 'reprovado'
+          && getAfter(/databases/$(database)/documents/lotes/$(loteId)/historico/reprovacao).data.tipo == 'reprovacao')
+          || (perfil() == 'operador'
+          && resource.data.status == 'ativo'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['etapaAtual'])
+          && resource.data.etapaAtual is int
+          && resource.data.etapas is list
+          && resource.data.etapaAtual < resource.data.etapas.size()
+          && request.resource.data.etapaAtual == resource.data.etapaAtual + 1
+          && getAfter(/databases/$(database)/documents/lotes/$(loteId)/historico/$(request.resource.data.etapaAtual)).data.tipo == 'etapa'
+          && getAfter(/databases/$(database)/documents/lotes/$(loteId)/historico/$(request.resource.data.etapaAtual)).data.ordem == request.resource.data.etapaAtual
+          && getAfter(/databases/$(database)/documents/lotes/$(loteId)/historico/$(request.resource.data.etapaAtual)).data.etapa == resource.data.etapas[resource.data.etapaAtual].nome));
 
       match /historico/{eventoId} {
         allow read: if temPerfil();
         allow create: if request.auth != null
-          && eventoId == 'reprovacao'
-          && perfil() == 'qualidade'
-          && get(/databases/$(database)/documents/lotes/$(loteId)).data.status == 'ativo'
-          && getAfter(/databases/$(database)/documents/lotes/$(loteId)).data.status == 'reprovado'
-          && request.resource.data.keys().hasAll([
-            'tipo', 'motivo', 'autorUid', 'autorNome', 'registradoEm'
-          ])
-          && request.resource.data.keys().hasOnly([
-            'tipo', 'motivo', 'autorUid', 'autorNome', 'registradoEm'
-          ])
-          && request.resource.data.tipo == 'reprovacao'
-          && request.resource.data.motivo is string
-          && request.resource.data.motivo.matches('(?s).*\\S.*')
-          && request.resource.data.motivo.size() <= 300
-          && request.resource.data.autorUid == request.auth.uid
-          && request.resource.data.autorNome == nomeAutor()
-          && request.resource.data.registradoEm == request.time;
+          && ((eventoId == 'reprovacao'
+            && perfil() == 'qualidade'
+            && get(/databases/$(database)/documents/lotes/$(loteId)).data.status == 'ativo'
+            && getAfter(/databases/$(database)/documents/lotes/$(loteId)).data.status == 'reprovado'
+            && request.resource.data.keys().hasAll([
+              'tipo', 'motivo', 'autorUid', 'autorNome', 'registradoEm'
+            ])
+            && request.resource.data.keys().hasOnly([
+              'tipo', 'motivo', 'autorUid', 'autorNome', 'registradoEm'
+            ])
+            && request.resource.data.tipo == 'reprovacao'
+            && request.resource.data.motivo is string
+            && request.resource.data.motivo.matches('(?s).*\\S.*')
+            && request.resource.data.motivo.size() <= 300
+            && request.resource.data.autorUid == request.auth.uid
+            && request.resource.data.autorNome == nomeAutor()
+            && request.resource.data.registradoEm == request.time)
+            || (perfil() == 'operador'
+            && request.resource.data.keys().hasAll([
+              'tipo', 'etapa', 'ordem', 'autorUid', 'autorNome', 'registradoEm'
+            ])
+            && request.resource.data.keys().hasOnly([
+              'tipo', 'etapa', 'ordem', 'autorUid', 'autorNome', 'registradoEm'
+            ])
+            && request.resource.data.tipo == 'etapa'
+            && request.resource.data.ordem is int
+            && eventoId == string(request.resource.data.ordem)
+            && get(/databases/$(database)/documents/lotes/$(loteId)).data.status == 'ativo'
+            && get(/databases/$(database)/documents/lotes/$(loteId)).data.etapaAtual + 1 == request.resource.data.ordem
+            && get(/databases/$(database)/documents/lotes/$(loteId)).data.etapas[
+              get(/databases/$(database)/documents/lotes/$(loteId)).data.etapaAtual
+            ].nome == request.resource.data.etapa
+            && getAfter(/databases/$(database)/documents/lotes/$(loteId)).data.etapaAtual == request.resource.data.ordem
+            && request.resource.data.autorUid == request.auth.uid
+            && request.resource.data.autorNome == nomeOperador()
+            && request.resource.data.registradoEm == request.time));
       }
     }
   }

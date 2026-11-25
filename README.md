@@ -8,12 +8,13 @@ Aplicativo Android para identificar lotes de fabricação e consultar o que acon
 | --- | --- | --- |
 | Cadastrar lote | Operador de etapa | O lote recebe um código único, data de criação, identificação do operador e situação inicial **Ativo**. |
 | Identificar lote | Operador de etapa | Após a confirmação da gravação, o aplicativo exibe a etiqueta. O QR Code contém o identificador do lote. A última etiqueta pode ser recuperada pelo mesmo operador no aparelho. |
+| Registrar etapa | Operador de etapa | O operador lê o QR Code, confere e confirma a próxima etapa. O aplicativo atualiza a etapa atual e grava o evento com UID, nome e horário do servidor. |
 | Consultar histórico | Operador de etapa e Qualidade | A busca pelo código abre a situação do lote e os eventos em ordem cronológica. A tela acompanha as atualizações do Firestore e indica quando ainda não há eventos. |
 | Reprovar lote | Qualidade | Em um lote ativo, a Qualidade informa um motivo de até 300 caracteres. A mudança para **Reprovado** e o evento com motivo, autoria e horário são gravados juntos. |
 
-**Exemplo de uso.** Ao cadastrar 120 unidades de uma peça, o operador recebe a etiqueta e pode abrir o histórico diretamente por ela. Se a inspeção encontrar uma medida fora da tolerância, a Qualidade busca o código e registra a ocorrência. Ao consultar o lote, o operador passa a ver a reprovação e seu motivo.
+**Exemplo de uso.** Ao cadastrar 120 unidades de uma peça, o operador recebe a etiqueta. Depois do corte, ele lê o QR Code, confirma a etapa seguinte e o avanço aparece no histórico. Se a inspeção encontrar uma medida fora da tolerância, a Qualidade busca o código e registra a ocorrência. Ao consultar o lote, o operador passa a ver a reprovação e seu motivo.
 
-**Em desenvolvimento.** O fluxo de produção por etapas prevê configurar a sequência, ler a etiqueta com a câmera e registrar o próximo avanço. As validações de salto, duplicidade e avanço após reprovação fazem parte dessa implementação. [Acompanhar no quadro do projeto](https://github.com/users/PedroVazN/projects/1)
+**Em desenvolvimento.** As validações adicionais de salto, duplicidade e avanço após reprovação fazem parte das próximas implementações. [Acompanhar no quadro do projeto](https://github.com/users/PedroVazN/projects/1)
 
 ## Telas do aplicativo
 
@@ -57,7 +58,7 @@ O aplicativo usa **Firebase Authentication** para identificar o usuário e **Clo
 | --- | --- |
 | `usuarios/{uid}` | Perfil de acesso e nome opcional para identificar o autor. O usuário pode consultar o próprio perfil. |
 | `lotes/{loteId}` | Produto, quantidade, autor e data de criação, situação e etapa atual. Um lote novo começa com `etapaAtual = 0`. |
-| `lotes/{loteId}/historico/{eventoId}` | Eventos ordenados por `registradoEm`. A reprovação usa o ID fixo `reprovacao` e guarda motivo, UID e nome do autor. |
+| `lotes/{loteId}/historico/{eventoId}` | Eventos ordenados por `registradoEm`. Etapas guardam nome, ordem, UID e nome do operador; reprovações guardam motivo, UID e nome do autor. |
 | `etapas/{etapaId}` | Estrutura prevista para as etapas de fabricação, com nome e ordem. |
 
 Para usar uma instância própria do Firebase, registre o aplicativo Android com o pacote indicado acima, habilite o provedor **E-mail/senha** e crie o banco Cloud Firestore. Para cada conta criada no Authentication, adicione um documento em `usuarios/{uid}` usando o UID da conta como ID e o campo de texto `perfil` com valor `operador` ou `qualidade`. Publique as [regras do Firestore](firestore.rules) no mesmo projeto antes de usar o aplicativo.
@@ -66,8 +67,8 @@ Para usar uma instância própria do Firebase, registre o aplicativo Android com
 
 | Componente | Responsabilidade |
 | --- | --- |
-| [Telas e adaptador](app/src/main/java/br/edu/unisenai/rastreabilidade) | Login e sessão, cadastro de lotes, geração do QR com ZXing e apresentação do histórico em RecyclerView. |
-| [Acesso a dados](app/src/main/java/br/edu/unisenai/rastreabilidade/data) | Cadastro e acompanhamento de lotes, consulta de eventos e gravação da reprovação no Firestore. |
+| [Telas e adaptador](app/src/main/java/br/edu/unisenai/rastreabilidade) | Login e sessão, cadastro de lotes, geração do QR com ZXing, leitura com Google Code Scanner e apresentação do histórico em RecyclerView. |
+| [Acesso a dados](app/src/main/java/br/edu/unisenai/rastreabilidade/data) | Cadastro e acompanhamento de lotes, consulta de eventos e gravação transacional de etapas e reprovações no Firestore. |
 | [Modelos](app/src/main/java/br/edu/unisenai/rastreabilidade/model) | Representação de lotes e eventos no aplicativo. |
 | [Layouts XML](app/src/main/res/layout) | Formulários, etiqueta e itens da lista de histórico. |
 
