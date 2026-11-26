@@ -32,6 +32,15 @@
     <string name="erro_quantidade">Informe um número inteiro maior que zero.</string>
     <string name="ver_historico">Ver histórico</string>
     <string name="consultar_historico">Consultar histórico de lote</string>
+    <string name="ler_qr">Ler QR e avançar etapa</string>
+    <string name="confirmar_etapa">Confirmar próxima etapa</string>
+    <string name="confirmar_etapa_mensagem">Registrar a etapa %1$s neste lote?</string>
+    <string name="confirmar">Confirmar</string>
+    <string name="etapa_salva">Etapa registrada com sucesso.</string>
+    <string name="erro_leitura_qr">Não foi possível ler o QR Code. Tente novamente.</string>
+    <string name="erro_qr_lote">QR inválido, lote desconhecido ou sem próxima etapa. Nenhuma alteração foi feita.</string>
+    <string name="erro_carregar_qr_lote">Não foi possível consultar o lote. Confira a conexão.</string>
+    <string name="erro_registrar_etapa">Não foi possível registrar a etapa. Confira a conexão, as regras do Firestore e se o lote continua ativo.</string>
     <string name="etapas_titulo">Etapas da produção</string>
     <string name="etapas_instrucao">Digite uma etapa por linha. A ordem das linhas será usada no processo.</string>
     <string name="etapas_hint">Ex.: Corte, Solda, Pintura, Inspeção final</string>
