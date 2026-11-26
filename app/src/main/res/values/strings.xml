@@ -32,6 +32,16 @@
     <string name="erro_quantidade">Informe um número inteiro maior que zero.</string>
     <string name="ver_historico">Ver histórico</string>
     <string name="consultar_historico">Consultar histórico de lote</string>
+    <string name="etapas_titulo">Etapas da produção</string>
+    <string name="etapas_instrucao">Digite uma etapa por linha. A ordem das linhas será usada no processo.</string>
+    <string name="etapas_hint">Ex.: Corte, Solda, Pintura, Inspeção final</string>
+    <string name="etapas_salvar">Salvar sequência</string>
+    <string name="etapas_salvando">Salvando sequência…</string>
+    <string name="etapas_salvas">Sequência salva.</string>
+    <string name="erro_etapas_vazias">Informe pelo menos uma etapa e não deixe linhas vazias.</string>
+    <string name="erro_etapas_nao_cadastradas">Cadastre as etapas da produção antes de criar lotes.</string>
+    <string name="erro_carregar_etapas">Não foi possível carregar as etapas. Confira a conexão e o perfil.</string>
+    <string name="erro_salvar_etapas">Não foi possível salvar as etapas. Confira a conexão e o perfil Qualidade.</string>
     <string name="historico">Histórico do lote</string>
     <string name="codigo_lote">Código do lote</string>
     <string name="consultar">Consultar</string>
