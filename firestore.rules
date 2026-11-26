@@ -27,15 +27,14 @@ service cloud.firestore {
       allow read: if temPerfil();
       allow create, update: if request.auth != null
         && perfil() == 'qualidade'
-        && request.resource.data.keys().hasAll(['nome', 'ordem'])
-        && request.resource.data.keys().hasOnly(['nome', 'ordem'])
-        && request.resource.data.nome is string
-        && request.resource.data.nome.matches('.*[^\\s].*')
-        && request.resource.data.ordem is int
-        && request.resource.data.ordem > 0
-        && etapaId.matches('^[1-9][0-9]*$')
-        && int(etapaId) == request.resource.data.ordem;
-      allow delete: if request.auth != null && perfil() == 'qualidade';
+        && etapaId == 'config'
+        && request.resource.data.keys().hasAll(['sequencia'])
+        && request.resource.data.keys().hasOnly(['sequencia'])
+        && request.resource.data.sequencia is list
+        && request.resource.data.sequencia.size() > 0;
+      allow delete: if request.auth != null
+        && perfil() == 'qualidade'
+        && etapaId == 'config';
     }
 
     match /lotes/{loteId} {
