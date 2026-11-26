@@ -3,9 +3,9 @@ package br.edu.unisenai.rastreabilidade.data;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +16,60 @@ import br.edu.unisenai.rastreabilidade.model.Etapa;
 public final class EtapasFirestore {
     private final FirebaseFirestore banco = FirebaseFirestore.getInstance();
     private final CollectionReference etapas = banco.collection("etapas");
+    private final DocumentReference configuracao = etapas.document("config");
 
     public void carregar(OnSuccessListener<List<Etapa>> aoCarregar, OnFailureListener aoFalhar) {
+        configuracao.get().addOnSuccessListener(documento -> {
+            if (documento.exists()) {
+                carregarConfiguracao(documento, aoCarregar, aoFalhar);
+                return;
+            }
+
+            carregarEtapasAntigas(aoCarregar, aoFalhar);
+        }).addOnFailureListener(aoFalhar);
+    }
+
+    private void carregarConfiguracao(DocumentSnapshot documento,
+                                      OnSuccessListener<List<Etapa>> aoCarregar,
+                                      OnFailureListener aoFalhar) {
+        Object valorSequencia = documento.get("sequencia");
+        if (!(valorSequencia instanceof List<?>)) {
+            aoFalhar.onFailure(new IllegalStateException("A sequência de etapas salva é inválida."));
+            return;
+        }
+
+        List<?> etapasSalvas = (List<?>) valorSequencia;
+        if (etapasSalvas.isEmpty()) {
+            aoFalhar.onFailure(new IllegalStateException("A sequência de etapas salva é inválida."));
+            return;
+        }
+
+        List<Etapa> sequencia = new ArrayList<>();
+        for (int i = 0; i < etapasSalvas.size(); i++) {
+            Object valorEtapa = etapasSalvas.get(i);
+            if (!(valorEtapa instanceof Map<?, ?>)) {
+                aoFalhar.onFailure(new IllegalStateException("A sequência de etapas salva é inválida."));
+                return;
+            }
+
+            Map<?, ?> dadosEtapa = (Map<?, ?>) valorEtapa;
+            Object nome = dadosEtapa.get("nome");
+            Object ordem = dadosEtapa.get("ordem");
+            if (dadosEtapa.size() != 2 || !(nome instanceof String)
+                    || ((String) nome).trim().isEmpty() || !(ordem instanceof Long)
+                    || ((Long) ordem) != i + 1) {
+                aoFalhar.onFailure(new IllegalStateException("A sequência de etapas salva é inválida."));
+                return;
+            }
+
+            sequencia.add(new Etapa(((String) nome).trim(), i + 1));
+        }
+
+        aoCarregar.onSuccess(sequencia);
+    }
+
+    private void carregarEtapasAntigas(OnSuccessListener<List<Etapa>> aoCarregar,
+                                       OnFailureListener aoFalhar) {
         etapas.orderBy("ordem").get().addOnSuccessListener(resultado -> {
             List<Etapa> sequencia = new ArrayList<>();
             for (DocumentSnapshot documento : resultado.getDocuments()) {
@@ -48,30 +100,22 @@ public final class EtapasFirestore {
             return;
         }
 
-        etapas.get().addOnSuccessListener(resultado -> {
-            WriteBatch lote = banco.batch();
+        List<Map<String, Object>> etapasSalvas = new ArrayList<>();
+        for (int ordem = 1; ordem <= novaSequencia.size(); ordem++) {
             for (Etapa etapa : novaSequencia) {
-                // O ID igual à ordem atualiza a etapa naquela posição.
-                String id = String.valueOf(etapa.ordem);
-                lote.set(etapas.document(id), Map.of(
-                        "nome", etapa.nome.trim(),
-                        "ordem", etapa.ordem
-                ));
-            }
-            for (DocumentSnapshot documento : resultado.getDocuments()) {
-                boolean manter = false;
-                for (Etapa etapa : novaSequencia) {
-                    if (String.valueOf(etapa.ordem).equals(documento.getId())) {
-                        manter = true;
-                        break;
-                    }
-                }
-                if (!manter) {
-                    lote.delete(documento.getReference());
+                if (etapa.ordem == ordem) {
+                    etapasSalvas.add(Map.of(
+                            "nome", etapa.nome.trim(),
+                            "ordem", etapa.ordem
+                    ));
+                    break;
                 }
             }
-            lote.commit().addOnSuccessListener(aoSalvar).addOnFailureListener(aoFalhar);
-        }).addOnFailureListener(aoFalhar);
+        }
+
+        configuracao.set(Map.of("sequencia", etapasSalvas))
+                .addOnSuccessListener(aoSalvar)
+                .addOnFailureListener(aoFalhar);
     }
 
     private String validar(List<Etapa> sequencia) {
