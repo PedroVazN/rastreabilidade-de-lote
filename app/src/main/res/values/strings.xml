@@ -54,6 +54,8 @@
     <string name="historico">Histórico do lote</string>
     <string name="codigo_lote">Código do lote</string>
     <string name="consultar">Consultar</string>
+    <string name="ler_qr_consulta">Ler QR do lote</string>
+    <string name="erro_qr_consulta">O QR lido não contém um código de lote válido.</string>
     <string name="situacao_ativo">Situação: ativo</string>
     <string name="situacao_reprovado">Situação: reprovado</string>
     <string name="historico_vazio">Nenhuma etapa registrada para este lote.</string>

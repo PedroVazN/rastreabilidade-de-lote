@@ -20,6 +20,9 @@
                 android:layout_height="wrap_content" android:layout_marginTop="12dp"
                 android:backgroundTint="#131416" android:textColor="#FFFFFF"
                 android:text="@string/consultar" android:textAllCaps="false" />
+            <Button android:id="@+id/ler_qr" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="8dp"
+                android:text="@string/ler_qr_consulta" android:textAllCaps="false" />
         </LinearLayout>
         <TextView android:id="@+id/situacao" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:layout_marginTop="16dp"

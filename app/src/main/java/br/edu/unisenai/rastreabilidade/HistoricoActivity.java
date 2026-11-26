@@ -20,6 +20,9 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.MetadataChanges;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +40,7 @@ public class HistoricoActivity extends Activity {
     private TextView situacao;
     private TextView vazio;
     private Button reprovar;
+    private Button lerQr;
     private AlertDialog dialogoMotivo;
     private boolean qualidade;
     private HistoricoAdapter adapter;
@@ -70,6 +74,8 @@ public class HistoricoActivity extends Activity {
         lista.setLayoutManager(new LinearLayoutManager(this));
         lista.setAdapter(adapter);
         findViewById(R.id.consultar).setOnClickListener(view -> consultar());
+        lerQr = findViewById(R.id.ler_qr);
+        lerQr.setOnClickListener(view -> lerQr());
         codigo.setOnEditorActionListener((view, acao, evento) -> {
             if (acao == EditorInfo.IME_ACTION_SEARCH) {
                 consultar();
@@ -141,6 +147,39 @@ public class HistoricoActivity extends Activity {
                 .hideSoftInputFromWindow(codigo.getWindowToken(), 0);
         ouvir();
         mostrar();
+    }
+
+    private void lerQr() {
+        GmsBarcodeScannerOptions opcoes = new GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build();
+        lerQr.setEnabled(false);
+        GmsBarcodeScanning.getClient(this, opcoes).startScan()
+                .addOnSuccessListener(lido -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    lerQr.setEnabled(true);
+                    String id = lido.getRawValue() == null ? "" : lido.getRawValue().trim();
+                    if (!HistoricoFirestore.codigoValido(id)) {
+                        Toast.makeText(this, R.string.erro_qr_consulta, Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    codigo.setText(id);
+                    consultar();
+                })
+                .addOnCanceledListener(() -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        lerQr.setEnabled(true);
+                    }
+                })
+                .addOnFailureListener(erro -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    Toast.makeText(this, R.string.erro_leitura_qr, Toast.LENGTH_LONG).show();
+                    lerQr.setEnabled(true);
+                });
     }
 
     private void ouvir() {

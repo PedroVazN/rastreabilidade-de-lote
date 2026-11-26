@@ -10,7 +10,7 @@ Aplicativo Android para identificar lotes de fabricação e consultar o que acon
 | Configurar etapas | Qualidade | Salva a sequência de fabricação; lotes novos recebem uma cópia da sequência configurada. |
 | Identificar lote | Operador de etapa | Após a confirmação da gravação, o aplicativo exibe a etiqueta. O QR Code contém o identificador do lote. A última etiqueta pode ser recuperada pelo mesmo operador no aparelho. |
 | Registrar etapa | Operador de etapa | Leia o QR Code e confirme a próxima etapa. O histórico registra a etapa, o operador e o horário do servidor. |
-| Consultar histórico | Operador de etapa e Qualidade | A busca pelo código abre a situação do lote e os eventos em ordem cronológica. A tela acompanha as atualizações do Firestore e indica quando ainda não há eventos. |
+| Consultar histórico | Operador de etapa e Qualidade | A busca pelo código, digitado ou lido do QR Code, abre a situação do lote e os eventos em ordem cronológica. A tela acompanha as atualizações do Firestore e indica quando ainda não há eventos. |
 | Reprovar lote | Qualidade | Em um lote ativo, a Qualidade informa um motivo de até 300 caracteres. A mudança para **Reprovado** e o evento com motivo, autoria e horário são gravados juntos. |
 
 **Exemplo de uso.** Ao cadastrar 120 unidades de uma peça, o operador recebe a etiqueta. Depois do corte, ele lê o QR Code, confirma o avanço e consulta o registro no histórico. Se a inspeção encontrar uma medida fora da tolerância, a Qualidade busca o código e registra a ocorrência. Ao consultar o lote, o operador passa a ver a reprovação e seu motivo.
